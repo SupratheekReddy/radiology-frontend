@@ -741,9 +741,13 @@ function setupSocket() {
   if (!currentUser) return;
 
   socket = io(API_BASE, {
-    transports: ["websocket"],
-    withCredentials: true,
-  });
+  transports: ["websocket"],
+  withCredentials: true,
+  extraHeaders: {
+    "Access-Control-Allow-Credentials": "true"
+  }
+});
+
 
   socket.on("connect", () => {
     console.log("Socket connected:", socket.id);
