@@ -1,245 +1,562 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Radiology Portal</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rad AI | Intelligent Radiology Platform</title>
 
-  <!-- SOCKET.IO -->
+  <!-- Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Socket.io -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-  <style>
-    /* --------------- GLOBAL --------------- */
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
-    }
-    body {
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #1f2933 0, #050608 55%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #e5e7eb;
-    }
-
-    /* Login Card */
-    .auth-card {
-      width: 380px;
-      max-width: 95vw;
-      background: #0b1015;
-      border-radius: 14px;
-      border: 1px solid rgba(148,163,184,0.5);
-      box-shadow: 0 24px 60px rgba(0,0,0,0.85);
-      padding: 22px 24px 20px;
-    }
-    .auth-title { text-align:center;font-size:20px;font-weight:650;margin-bottom:4px; }
-    .auth-subtitle { text-align:center;font-size:12px;color:#9ca3af;margin-bottom:18px; }
-
-    .role-toggle { display:flex;background:#020617;border-radius:999px;padding:2px;border:1px solid #374151;margin-bottom:18px;}
-    .role-btn { flex:1;padding:7px;font-size:12px;border-radius:999px;border:none;background:transparent;color:#9ca3af;cursor:pointer; }
-    .role-btn.active { background:#111827;color:#fff;font-weight:600; }
-
-    .auth-input {
-      width:100%;padding:9px 10px;font-size:13px;background:#020617;
-      border-radius:8px;border:1px solid #1f2937;color:#e5e7eb;margin-bottom:10px;
-    }
-
-    .primary-btn {
-      width:100%;margin-top:6px;padding:9px;font-size:13px;border-radius:8px;
-      background:linear-gradient(90deg,#2563eb,#38bdf8);color:white;font-weight:600;
-      border:none;cursor:pointer;
-    }
-
-    .error-text { color:#f97373;font-size:12px;display:none;margin-top:6px; }
-
-    /* Dashboard */
-    .dashboard {
-      display:none;width:min(1000px,96vw);background:#050a10;border-radius:12px;
-      border:1px solid #4b5563;box-shadow:0 24px 70px rgba(0,0,0,0.9);
-      padding:16px;color:#e5e7eb;
-    }
-
-    .tab-bar { display:flex;gap:6px;margin:10px 0;flex-wrap:wrap; }
-    .tab-link { padding:5px 10px;border-radius:999px;font-size:11px;border:1px solid #4b5563;background:#020617;cursor:pointer; }
-    .tab-link.active { background:#1d4ed8;border-color:#1d4ed8; }
-
-    .section {
-      display:none;background:#020617;border-radius:10px;border:1px solid #111827;
-      padding:10px;margin-top:8px;
-    }
-
-    .section-title { font-size:12px;color:#93c5fd;margin-bottom:6px; }
-
-    .case-list { list-style:none;margin-top:4px; }
-    .case-card { background:#020617;border:1px solid #1f2937;border-radius:8px;padding:8px;margin-bottom:8px;font-size:12px; }
-
-    .image-strip img {
-      max-width:120px;max-height:90px;border-radius:4px;border:1px solid #1f2937;
-    }
-
-    .small-btn { padding:4px 8px;font-size:11px;border-radius:999px;border:1px solid #4b5563;background:transparent;color:white;cursor:pointer;margin-top:4px; }
-  </style>
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
-<!-- ----------------------------------------------------------- -->
-<!-- LOGIN CARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="auth-card" id="loginCard">
-  <div class="auth-title">Radiology Portal</div>
-  <div class="auth-subtitle">Login to your workspace</div>
+<!-- ============================================================
+     VIEW 1 — LANDING PAGE (Theme A fully preserved)
+=============================================================== -->
+<div id="landingPage">
 
-  <div class="role-toggle" id="roleToggle">
-    <button class="role-btn active" data-role="admin">Admin</button>
-    <button class="role-btn" data-role="doctor">Doctor</button>
-    <button class="role-btn" data-role="technician">Technician</button>
-    <button class="role-btn" data-role="radiologist">Radiologist</button>
-    <button class="role-btn" data-role="patient">Patient</button>
-  </div>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <div class="brand">
+        <div class="logo-box"><i class="fa-solid fa-layer-group"></i></div>
+        <span>Rad AI</span>
+      </div>
 
-  <input id="loginId" class="auth-input" placeholder="username" />
-  <input id="loginPassword" class="auth-input" type="password" placeholder="password" />
+      <ul class="nav-links">
+        <li><a href="#features">Platform Features</a></li>
+        <li><a href="#impact">Clinical Impact</a></li>
+        <li><a href="#workflow">Workflow</a></li>
+        <li><a href="#about">About Us</a></li>
+      </ul>
 
-  <button class="primary-btn" id="loginBtn">Sign in</button>
-  <div class="error-text" id="loginError">Invalid credentials</div>
+      <button class="btn-primary-outline" onclick="navigateToLogin()">Login</button>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="container hero-content">
+
+      <div class="hero-text fade-in-up">
+        <div class="badge-pill"><i class="fa-solid fa-sparkles"></i> Next-Gen Radiology</div>
+
+        <h1>
+          Accelerating Diagnosis <br>
+          with <span class="highlight">Artificial Intelligence.</span>
+        </h1>
+
+        <p>
+          Seamlessly connecting Patients, Doctors, and Radiologists in one
+          unified, intelligent workflow.
+        </p>
+
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="navigateToLogin()">Get Started</button>
+          <button class="btn-text"><i class="fa-solid fa-play-circle"></i> See How It Works</button>
+        </div>
+      </div>
+
+      <!-- HERO RIGHT SIDE -->
+      <div class="hero-image fade-in-up delay-100">
+        <div class="glass-mockup">
+          <div class="scan-animation">
+            <i class="fa-solid fa-rib-cage"></i>
+            <div class="scan-beam"></div>
+          </div>
+          <div class="floating-card c1">
+            <i class="fa-solid fa-check-circle"></i> No Anomalies
+          </div>
+          <div class="floating-card c2">
+            <i class="fa-solid fa-user-doctor"></i> Dr. Verify
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="section">
+    <div class="container">
+
+      <div class="section-title">
+        <h2>Platform Features</h2>
+        <p>Built for speed, accuracy, and ease of use.</p>
+      </div>
+
+      <div class="grid-3">
+
+        <div class="feature-card">
+          <div class="icon-sq blue"><i class="fa-solid fa-brain"></i></div>
+          <h3>AI Analysis</h3>
+          <p>
+            Automated pre-screening of X-Rays and MRIs to flag critical conditions instantly.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-sq purple"><i class="fa-solid fa-share-nodes"></i></div>
+          <h3>Unified Workflow</h3>
+          <p>
+            Real-time data sync between technicians, radiologists, and consulting doctors.
+          </p>
+        </div>
+
+        <div class="feature-card">
+          <div class="icon-sq green"><i class="fa-solid fa-shield-halved"></i></div>
+          <h3>Secure Data</h3>
+          <p>
+            End-to-end encryption compliant with global healthcare standards.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CLINICAL IMPACT -->
+  <section id="impact" class="section bg-soft">
+    <div class="container split-view">
+
+      <div class="split-text">
+        <h2>Clinical Impact</h2>
+        <ul class="impact-list">
+          <li><span>40%</span> Faster Diagnosis Time</li>
+          <li><span>99%</span> Accuracy in Fracture Detection</li>
+          <li><span>24/7</span> Automated Triage System</li>
+        </ul>
+      </div>
+
+      <div class="split-img">
+        <div class="impact-card">
+          <h3>Patient Outcomes</h3>
+          <div class="chart-line"></div>
+          <div class="chart-line w-80"></div>
+          <div class="chart-line w-60"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="footer" id="about">
+    <div class="container">
+      <div class="footer-brand">
+        <span>Rad AI</span>
+        <p>&copy; 2024 Intelligent Medical Systems</p>
+      </div>
+    </div>
+  </footer>
+
 </div>
+<!-- ==============================================
+      VIEW 2 — LOGIN PAGE
+      (Compatible with script.js — DO NOT CHANGE IDS)
+================================================== -->
+<div id="loginPage" style="display:none;">
+  <div class="login-container">
 
-<!-- ----------------------------------------------------------- -->
-<!-- ADMIN DASHBOARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="dashboard" id="adminDashboard">
-  <div class="dash-header">
-    <div><div class="dash-title">Admin Console</div></div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
+    <!-- LEFT SIDE -->
+    <div class="login-left">
+      <button class="back-link" onclick="navigateToHome()">
+        <i class="fa-solid fa-arrow-left"></i> Back to Home
+      </button>
 
-  <div class="tab-bar">
-    <button class="tab-link active" data-target="adminAddDoctor">Add Doctor</button>
-    <button class="tab-link" data-target="adminAddTech">Add Technician</button>
-    <button class="tab-link" data-target="adminAddRadio">Add Radiologist</button>
-    <button class="tab-link" data-target="adminAddPatient">Add Patient</button>
-    <button class="tab-link" data-target="adminSchedule">Schedule Case</button>
-    <button class="tab-link" data-target="adminCases">All Cases</button>
-  </div>
+      <div class="login-brand">
+        <h1>Rad AI</h1>
+        <p>Secure Medical Portal</p>
+      </div>
 
-  <!-- Add Doctor -->
-  <div class="section" id="adminAddDoctor">
-    <div class="section-title">Add Doctor</div>
-    <input id="docName" class="auth-input" placeholder="Name" />
-    <input id="docEmail" class="auth-input" placeholder="Email" />
-    <input id="docUser" class="auth-input" placeholder="Username" />
-    <button class="primary-btn" onclick="addDoctor()">Save</button>
-    <div class="success-text" id="docSuccess">Doctor added.</div>
-  </div>
+      <div class="login-art">
+        <div class="art-blob"></div>
+        <img src="https://img.freepik.com/free-vector/doctor-concept-illustration_114360-1269.jpg"
+             class="art-img">
+      </div>
+    </div>
 
-  <!-- Add Technician -->
-  <div class="section" id="adminAddTech">
-    <div class="section-title">Add Technician</div>
-    <input id="techName" class="auth-input" placeholder="Name" />
-    <input id="techEmail" class="auth-input" placeholder="Email" />
-    <input id="techUser" class="auth-input" placeholder="Username" />
-    <input id="techPass" class="auth-input" placeholder="Password" />
-    <button class="primary-btn" onclick="addTechnician()">Save</button>
-    <div class="success-text" id="techSuccess">Technician added.</div>
-  </div>
+    <!-- RIGHT SIDE -->
+    <div class="login-right">
+      <div class="login-box">
 
-  <!-- Add Patient -->
-  <div class="section" id="adminAddPatient">
-    <div class="section-title">Add Patient</div>
-    <input id="patName" class="auth-input" placeholder="Name" />
-    <input id="patEmail" class="auth-input" placeholder="Email" />
-    <input id="patUser" class="auth-input" placeholder="Username" />
-    <input id="patPass" class="auth-input" placeholder="Password" />
-    <select id="patPriority" class="auth-input">
-      <option value="Critical">Critical</option>
-      <option value="Medium">Medium</option>
-      <option value="Safe">Safe</option>
-    </select>
-    <button class="primary-btn" onclick="addPatient()">Save</button>
-    <div class="success-text" id="patSuccess">Patient added.</div>
-  </div>
+        <h2>Select Portal</h2>
+        <p class="sub-head">Who is logging in today?</p>
 
-  <!-- Schedule Case -->
-  <div class="section" id="adminSchedule">
-    <div class="section-title">Schedule Case</div>
-    <select id="casePatient" class="auth-input"></select>
-    <select id="caseDoctor" class="auth-input"></select>
-    <input type="date" id="caseDate" class="auth-input" />
-    <select id="caseSlot" class="auth-input">
-      <option>09:00-10:00</option>
-      <option>10:00-11:00</option>
-      <option>11:00-12:00</option>
-      <option>14:00-15:00</option>
-      <option>15:00-16:00</option>
-    </select>
-    <select id="caseScanType" class="auth-input">
-      <option>CT</option><option>MRI</option><option>X-Ray</option><option>Ultrasound</option>
-    </select>
-    <select id="casePriority" class="auth-input">
-      <option>Critical</option><option>Medium</option><option>Safe</option>
-    </select>
-    <input id="caseRefDoc" class="auth-input" placeholder="Referring Doctor" />
-    <textarea id="caseSymptoms" class="auth-input"></textarea>
+        <!-- ROLE SELECTOR (IDs MATCH SCRIPT.JS EXACTLY) -->
+        <div class="role-grid" id="roleToggle">
+          <button class="role-card active" data-role="patient">
+            <i class="fa-solid fa-user-injured"></i><span>Patient</span>
+          </button>
+          <button class="role-card" data-role="admin">
+            <i class="fa-solid fa-user-shield"></i><span>Admin</span>
+          </button>
+          <button class="role-card" data-role="doctor">
+            <i class="fa-solid fa-user-doctor"></i><span>Doctor</span>
+          </button>
+          <button class="role-card" data-role="radiologist">
+            <i class="fa-solid fa-x-ray"></i><span>Radiologist</span>
+          </button>
+          <button class="role-card" data-role="technician">
+            <i class="fa-solid fa-microscope"></i><span>Tech</span>
+          </button>
+        </div>
 
-    <button class="primary-btn" onclick="scheduleCase()">Schedule</button>
-    <div class="success-text" id="caseSuccess">Scheduled.</div>
-  </div>
+        <!-- LOGIN FORM — IDs MUST MATCH script.js -->
+        <div class="form-wrapper">
+          <div class="input-group">
+            <label>ID / Username</label>
+            <input type="text" id="loginId" placeholder="Enter your ID">
+          </div>
 
-  <!-- All Cases -->
-  <div class="section" id="adminCases">
-    <div class="section-title">All Cases</div>
-    <ul id="adminCasesList" class="case-list"></ul>
+          <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+          </div>
+
+          <button class="btn-primary full-width" id="loginBtn">
+            Access Dashboard
+          </button>
+
+          <div class="error-msg" id="loginError">Invalid Credentials</div>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 </div>
+    <!-- ===============================
+         VIEW 3: APP LAYOUT (Dashboard)
+    ================================ -->
+    <div id="appLayout" style="display:none;">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Rad AI</span>
+        </div>
 
-<!-- ----------------------------------------------------------- -->
-<!-- DOCTOR DASHBOARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="dashboard" id="doctorDashboard">
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <div class="section" style="display:block;">
-    <div class="section-title">Assigned Cases</div>
-    <ul id="doctorCasesList" class="case-list"></ul>
-  </div>
-</div>
+        <!-- Dynamic Role‑Based Sidebar -->
+        <nav id="dynamicNav" class="sidebar-nav"></nav>
 
-<!-- ----------------------------------------------------------- -->
-<!-- PATIENT DASHBOARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="dashboard" id="patientDashboard">
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <div class="section" style="display:block;">
-    <div class="section-title">My Cases</div>
-    <ul id="patientCasesList" class="case-list"></ul>
-  </div>
-</div>
+        <div class="user-panel">
+          <img src="" id="userAvatar">
+          <div class="user-info">
+            <strong id="displayUsername">User</strong>
+            <small id="displayRole">Role</small>
+          </div>
+          <button onclick="logout()" class="logout-icon">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      </aside>
 
-<!-- ----------------------------------------------------------- -->
-<!-- TECHNICIAN DASHBOARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="dashboard" id="techDashboard">
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <div class="section" style="display:block;">
-    <div class="section-title">Upload Images</div>
-    <ul id="techCasesList" class="case-list"></ul>
-  </div>
-</div>
+      <main class="main-content">
+        <header class="top-header">
+          <h2 id="pageTitle">Dashboard</h2>
+          <div class="status-indicator">
+            <div class="dot"></div> System Live
+          </div>
+        </header>
 
-<!-- ----------------------------------------------------------- -->
-<!-- RADIOLOGIST DASHBOARD -->
-<!-- ----------------------------------------------------------- -->
-<div class="dashboard" id="radioDashboard">
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <div class="section" style="display:block;">
-    <div class="section-title">Cases With Images</div>
-    <ul id="radioCasesList" class="case-list"></ul>
-  </div>
-</div>
+        <div class="content-body" id="mainContainer">
 
+          <!-- ============================
+               ADMIN PANEL — FULL WIRED
+          ============================= -->
+          <div id="adminSections" class="view-group">
 
-<!-- MAIN APP LOGIC -->
-<script src="script.js"></script>
+            <!-- TOP STATS -->
+            <div class="stats-row">
+              <div class="stat-box">
+                <i class="fa-solid fa-user-doctor purple"></i>
+                <div><h4>Doctors</h4><span>Active</span></div>
+              </div>
+              <div class="stat-box">
+                <i class="fa-solid fa-bed-pulse blue"></i>
+                <div><h4>Patients</h4><span>Monitoring</span></div>
+              </div>
+              <div class="stat-box">
+                <i class="fa-solid fa-check-circle green"></i>
+                <div><h4>System</h4><span>Optimal</span></div>
+              </div>
+            </div>
+
+            <!-- ADMIN FORMS GRID -->
+            <div class="form-grid-layout">
+
+              <!-- ADMIN: ADD DOCTOR -->
+              <div class="card section" id="adminAddDoctor">
+                <h3>Add Doctor</h3>
+                <input id="docName" class="inp" placeholder="Name">
+                <input id="docEmail" class="inp" placeholder="Email">
+                <input id="docUser" class="inp" placeholder="Username">
+                <button class="btn-primary mt-2" onclick="addDoctor()">Save</button>
+                <span id="docSuccess" class="success-msg">Saved!</span>
+              </div>
+
+              <!-- ADMIN: ADD TECH -->
+              <div class="card section" id="adminAddTech">
+                <h3>Add Technician</h3>
+                <input id="techName" class="inp" placeholder="Name">
+                <input id="techEmail" class="inp" placeholder="Email">
+                <input id="techUser" class="inp" placeholder="Username">
+                <input id="techPass" class="inp" type="password" placeholder="Password">
+                <button class="btn-primary mt-2" onclick="addTechnician()">Save</button>
+                <span id="techSuccess" class="success-msg">Saved!</span>
+              </div>
+
+              <!-- ADMIN: ADD PATIENT -->
+              <div class="card section" id="adminAddPatient">
+                <h3>Add Patient</h3>
+                <input id="patName" class="inp" placeholder="Name">
+                <input id="patEmail" class="inp" placeholder="Email">
+                <input id="patUser" class="inp" placeholder="Username">
+                <input id="patPass" class="inp" type="password" placeholder="Password">
+                <select id="patPriority" class="inp">
+                  <option value="Critical">Critical</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Safe">Safe</option>
+                </select>
+                <button class="btn-primary mt-2" onclick="addPatient()">Save</button>
+                <span id="patSuccess" class="success-msg">Saved!</span>
+              </div>
+
+            </div> <!-- end grid -->
+
+            <!-- SCHEDULE CASE -->
+            <div class="card section mt-4" id="adminSchedule">
+              <h3>Schedule Scan</h3>
+              <div class="grid-3">
+
+                <select id="casePatient" class="inp"></select>
+                <select id="caseDoctor" class="inp"></select>
+                <input id="caseDate" class="inp" type="date">
+
+                <select id="caseSlot" class="inp">
+                  <option>09:00 - 10:00</option>
+                  <option>10:00 - 11:00</option>
+                  <option>11:00 - 12:00</option>
+                  <option>14:00 - 15:00</option>
+                </select>
+
+                <select id="caseScanType" class="inp">
+                  <option value="MRI">MRI</option>
+                  <option value="CT">CT Scan</option>
+                  <option value="X-Ray">X-Ray</option>
+                </select>
+
+                <select id="casePriority" class="inp">
+                  <option value="Critical">Critical</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Safe">Safe</option>
+                </select>
+
+                <input id="caseRefDoc" class="inp full" placeholder="Referring Doctor">
+                <textarea id="caseSymptoms" class="inp full" placeholder="Symptoms"></textarea>
+
+              </div>
+
+              <button class="btn-primary mt-2" onclick="scheduleCase()">Schedule</button>
+              <span id="caseSuccess" class="success-msg">Done!</span>
+            </div>
+
+            <!-- ADMIN CASES LIST -->
+            <div class="section mt-4" id="adminCases">
+              <div class="cards-list" id="adminCasesList"></div>
+            </div>
+
+          </div> <!-- END ADMIN -->
+
+        <!-- === ADMIN DASHBOARD SECTIONS === -->
+        <div id="adminSections" class="view-group">
+
+          <!-- DASHBOARD STATS -->
+          <div class="stats-row">
+            <div class="stat-box">
+              <i class="fa-solid fa-user-doctor purple"></i>
+              <div><h4>Doctors</h4><span>Active</span></div>
+            </div>
+            <div class="stat-box">
+              <i class="fa-solid fa-bed-pulse blue"></i>
+              <div><h4>Patients</h4><span>Monitoring</span></div>
+            </div>
+            <div class="stat-box">
+              <i class="fa-solid fa-check-circle green"></i>
+              <div><h4>System</h4><span>Optimal</span></div>
+            </div>
+          </div>
+
+          <!-- FORM GRID: ADD USERS -->
+          <div class="form-grid-layout">
+
+            <!-- ADD DOCTOR -->
+            <div class="card section" id="adminAddDoctor">
+              <h3>Add Doctor</h3>
+              <input id="docName" placeholder="Name" class="inp">
+              <input id="docEmail" placeholder="Email" class="inp">
+              <input id="docUser" placeholder="Username" class="inp">
+              <input id="docPass" type="password" placeholder="Password" class="inp">
+
+              <button class="btn-primary mt-2" onclick="addDoctor()">Save</button>
+              <span id="docSuccess" class="success-msg">Saved!</span>
+            </div>
+
+            <!-- ADD TECHNICIAN -->
+            <div class="card section" id="adminAddTech">
+              <h3>Add Technician</h3>
+              <input id="techName" placeholder="Name" class="inp">
+              <input id="techEmail" placeholder="Email" class="inp">
+              <input id="techUser" placeholder="Username" class="inp">
+              <input id="techPass" type="password" placeholder="Password" class="inp">
+
+              <button class="btn-primary mt-2" onclick="addTechnician()">Save</button>
+              <span id="techSuccess" class="success-msg">Saved!</span>
+            </div>
+
+            <!-- ADD RADIOLOGIST -->
+            <div class="card section" id="adminAddRadiologist">
+              <h3>Add Radiologist</h3>
+              <input id="radioName" placeholder="Name" class="inp">
+              <input id="radioEmail" placeholder="Email" class="inp">
+              <input id="radioUser" placeholder="Username" class="inp">
+              <input id="radioPass" type="password" placeholder="Password" class="inp">
+
+              <button class="btn-primary mt-2" onclick="addRadiologist()">Save</button>
+              <span id="radioSuccess" class="success-msg">Saved!</span>
+            </div>
+
+            <!-- ADD PATIENT -->
+            <div class="card section" id="adminAddPatient">
+              <h3>Add Patient</h3>
+              <input id="patName" placeholder="Name" class="inp">
+              <input id="patEmail" placeholder="Email" class="inp">
+              <input id="patUser" placeholder="Username" class="inp">
+              <input id="patPass" type="password" placeholder="Password" class="inp">
+
+              <select id="patPriority" class="inp">
+                <option value="Critical">Critical</option>
+                <option value="Medium">Medium</option>
+                <option value="Safe">Safe</option>
+              </select>
+
+              <button class="btn-primary mt-2" onclick="addPatient()">Save</button>
+              <span id="patSuccess" class="success-msg">Saved!</span>
+            </div>
+
+          </div>
+
+          <!-- SCHEDULE CASE -->
+          <div class="card section mt-4" id="adminSchedule">
+            <h3>Schedule Scan</h3>
+
+            <div class="grid-3">
+              <select id="casePatient" class="inp"></select>
+              <select id="caseDoctor" class="inp"></select>
+              <input type="date" id="caseDate" class="inp">
+
+              <select id="caseSlot" class="inp">
+                <option>09:00 - 10:00</option>
+                <option>10:00 - 11:00</option>
+                <option>11:00 - 12:00</option>
+                <option>14:00 - 15:00</option>
+              </select>
+
+              <select id="caseScanType" class="inp">
+                <option value="MRI">MRI</option>
+                <option value="CT">CT Scan</option>
+                <option value="X-Ray">X-Ray</option>
+              </select>
+
+              <select id="casePriority" class="inp">
+                <option value="Critical">Critical</option>
+                <option value="Medium">Medium</option>
+                <option value="Safe">Safe</option>
+              </select>
+
+              <input id="caseRefDoc" placeholder="Ref Doctor" class="inp full">
+              <textarea id="caseSymptoms" placeholder="Symptoms" class="inp full"></textarea>
+            </div>
+
+            <button class="btn-primary mt-2" onclick="scheduleCase()">Schedule</button>
+            <span id="caseSuccess" class="success-msg">Done!</span>
+          </div>
+
+          <!-- EXISTING CASES -->
+          <div class="section mt-4" id="adminCases">
+            <div class="cards-list" id="adminCasesList"></div>
+          </div>
+        </div>
+
+        <!-- === DOCTOR VIEW === -->
+        <div id="doctorCasesView" class="view-group" style="display:none">
+          <div class="cards-list" id="doctorCasesList"></div>
+        </div>
+
+        <!-- === PATIENT VIEW === -->
+        <div id="patientCasesView" class="view-group" style="display:none">
+          <div class="cards-list" id="patientCasesList"></div>
+        </div>
+
+        <!-- === TECH VIEW === -->
+        <div id="techCasesView" class="view-group" style="display:none">
+          <div class="cards-list" id="techCasesList"></div>
+        </div>
+
+        <!-- === RADIOLOGIST VIEW === -->
+        <div id="radioCasesView" class="view-group" style="display:none">
+          <div class="cards-list" id="radioCasesList"></div>
+        </div>
+
+      </div> <!-- END content-body -->
+
+    </main>
+  </div> <!-- END appLayout -->
+    </main>
+  </div> <!-- END OF #appLayout -->
+
+  <!-- ============================
+        MAIN SCRIPT
+  ============================= -->
+  <script src="script.js"></script>
+
+  <!-- ============================
+        NAVIGATION HANDLERS
+  ============================= -->
+  <script>
+    // Go from Landing → Login
+    function navigateToLogin() {
+      document.getElementById("landingPage").style.display = "none";
+      document.getElementById("loginPage").style.display = "flex";
+    }
+
+    // Back to Landing
+    function navigateToHome() {
+      document.getElementById("loginPage").style.display = "none";
+      document.getElementById("landingPage").style.display = "block";
+    }
+
+    // Open App Layout after login
+    function openDashboardForRole() {
+      document.getElementById("landingPage").style.display = "none";
+      document.getElementById("loginPage").style.display = "none";
+      document.getElementById("appLayout").style.display = "flex";
+    }
+  </script>
+
+  <!-- PREVENT LAYOUT FLASH -->
+  <script>
+    document.body.style.opacity = "1";
+  </script>
 
 </body>
 </html>
