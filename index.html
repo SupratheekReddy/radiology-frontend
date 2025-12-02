@@ -236,26 +236,6 @@
   </div>
 </div>
 
-<!-- ----------------------------------------------------------- -->
-<!-- SOCKET HANDLER (minimal) -->
-<!-- ----------------------------------------------------------- -->
-<script>
-  const API_BASE = "https://radiology-backend-vvor.onrender.com";
-
-  const socket = io(API_BASE, { transports: ["websocket"], withCredentials: true });
-
-  socket.on("case-updated", () => {
-    loadAdminCases?.();
-    loadDoctorCases?.();
-    loadPatientCases?.();
-    loadRadioCases?.();
-  });
-
-  socket.on("images-updated", () => {
-    loadTechCases?.();
-    loadRadioCases?.();
-  });
-</script>
 
 <!-- MAIN APP LOGIC -->
 <script src="script.js"></script>
