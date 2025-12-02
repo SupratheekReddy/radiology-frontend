@@ -21,7 +21,7 @@
 <body>
 
 <!-- ============================================================
-     VIEW 1 — LANDING PAGE (Theme A fully preserved)
+     VIEW 1 — LANDING PAGE
 =============================================================== -->
 <div id="landingPage">
 
@@ -32,14 +32,12 @@
         <div class="logo-box"><i class="fa-solid fa-layer-group"></i></div>
         <span>Rad AI</span>
       </div>
-
       <ul class="nav-links">
         <li><a href="#features">Platform Features</a></li>
         <li><a href="#impact">Clinical Impact</a></li>
         <li><a href="#workflow">Workflow</a></li>
         <li><a href="#about">About Us</a></li>
       </ul>
-
       <button class="btn-primary-outline" onclick="navigateToLogin()">Login</button>
     </div>
   </nav>
@@ -47,20 +45,16 @@
   <!-- HERO SECTION -->
   <section class="hero">
     <div class="container hero-content">
-
       <div class="hero-text fade-in-up">
         <div class="badge-pill"><i class="fa-solid fa-sparkles"></i> Next-Gen Radiology</div>
-
         <h1>
           Accelerating Diagnosis <br>
           with <span class="highlight">Artificial Intelligence.</span>
         </h1>
-
         <p>
           Seamlessly connecting Patients, Doctors, and Radiologists in one
           unified, intelligent workflow.
         </p>
-
         <div class="hero-actions">
           <button class="btn-primary" onclick="navigateToLogin()">Get Started</button>
           <button class="btn-text"><i class="fa-solid fa-play-circle"></i> See How It Works</button>
@@ -82,45 +76,32 @@
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
   <!-- FEATURES -->
   <section id="features" class="section">
     <div class="container">
-
       <div class="section-title">
         <h2>Platform Features</h2>
         <p>Built for speed, accuracy, and ease of use.</p>
       </div>
-
       <div class="grid-3">
-
         <div class="feature-card">
           <div class="icon-sq blue"><i class="fa-solid fa-brain"></i></div>
           <h3>AI Analysis</h3>
-          <p>
-            Automated pre-screening of X-Rays and MRIs to flag critical conditions instantly.
-          </p>
+          <p>Automated pre-screening of X-Rays and MRIs to flag critical conditions instantly.</p>
         </div>
-
         <div class="feature-card">
           <div class="icon-sq purple"><i class="fa-solid fa-share-nodes"></i></div>
           <h3>Unified Workflow</h3>
-          <p>
-            Real-time data sync between technicians, radiologists, and consulting doctors.
-          </p>
+          <p>Real-time data sync between technicians, radiologists, and consulting doctors.</p>
         </div>
-
         <div class="feature-card">
           <div class="icon-sq green"><i class="fa-solid fa-shield-halved"></i></div>
           <h3>Secure Data</h3>
-          <p>
-            End-to-end encryption compliant with global healthcare standards.
-          </p>
+          <p>End-to-end encryption compliant with global healthcare standards.</p>
         </div>
-
       </div>
     </div>
   </section>
@@ -128,7 +109,6 @@
   <!-- CLINICAL IMPACT -->
   <section id="impact" class="section bg-soft">
     <div class="container split-view">
-
       <div class="split-text">
         <h2>Clinical Impact</h2>
         <ul class="impact-list">
@@ -137,7 +117,6 @@
           <li><span>24/7</span> Automated Triage System</li>
         </ul>
       </div>
-
       <div class="split-img">
         <div class="impact-card">
           <h3>Patient Outcomes</h3>
@@ -146,7 +125,6 @@
           <div class="chart-line w-60"></div>
         </div>
       </div>
-
     </div>
   </section>
 
@@ -158,41 +136,34 @@
       </div>
     </div>
   </footer>
-
 </div>
+
 <!-- ==============================================
       VIEW 2 — LOGIN PAGE
-      (Compatible with script.js — DO NOT CHANGE IDS)
 ================================================== -->
 <div id="loginPage" style="display:none;">
   <div class="login-container">
-
     <!-- LEFT SIDE -->
     <div class="login-left">
       <button class="back-link" onclick="navigateToHome()">
         <i class="fa-solid fa-arrow-left"></i> Back to Home
       </button>
-
       <div class="login-brand">
         <h1>Rad AI</h1>
         <p>Secure Medical Portal</p>
       </div>
-
       <div class="login-art">
         <div class="art-blob"></div>
-        <img src="https://img.freepik.com/free-vector/doctor-concept-illustration_114360-1269.jpg"
-             class="art-img">
+        <img src="https://img.freepik.com/free-vector/doctor-concept-illustration_114360-1269.jpg" class="art-img">
       </div>
     </div>
 
     <!-- RIGHT SIDE -->
     <div class="login-right">
       <div class="login-box">
-
         <h2>Select Portal</h2>
         <p class="sub-head">Who is logging in today?</p>
-
-        <!-- ROLE SELECTOR (IDs MATCH SCRIPT.JS EXACTLY) -->
+        <!-- ROLE SELECTOR -->
         <div class="role-grid" id="roleToggle">
           <button class="role-card active" data-role="patient">
             <i class="fa-solid fa-user-injured"></i><span>Patient</span>
@@ -211,352 +182,191 @@
           </button>
         </div>
 
-        <!-- LOGIN FORM — IDs MUST MATCH script.js -->
+        <!-- LOGIN FORM -->
         <div class="form-wrapper">
           <div class="input-group">
             <label>ID / Username</label>
             <input type="text" id="loginId" placeholder="Enter your ID">
           </div>
-
           <div class="input-group">
             <label>Password</label>
             <input type="password" id="loginPassword" placeholder="••••••••">
           </div>
-
-          <button class="btn-primary full-width" id="loginBtn">
-            Access Dashboard
-          </button>
-
+          <button class="btn-primary full-width" id="loginBtn">Access Dashboard</button>
           <div class="error-msg" id="loginError">Invalid Credentials</div>
         </div>
-
       </div>
     </div>
-
   </div>
 </div>
-    <!-- ===============================
-         VIEW 3: APP LAYOUT (Dashboard)
-    ================================ -->
-    <div id="appLayout" style="display:none;">
-      <aside class="sidebar">
-        <div class="sidebar-brand">
-          <i class="fa-solid fa-layer-group"></i>
-          <span>Rad AI</span>
-        </div>
 
-        <!-- Dynamic Role‑Based Sidebar -->
-        <nav id="dynamicNav" class="sidebar-nav"></nav>
+<!-- ===============================
+     VIEW 3: APP LAYOUT (Dashboard)
+================================ -->
+<div id="appLayout" style="display:none;">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <i class="fa-solid fa-layer-group"></i>
+      <span>Rad AI</span>
+    </div>
 
-        <div class="user-panel">
-          <img src="" id="userAvatar">
-          <div class="user-info">
-            <strong id="displayUsername">User</strong>
-            <small id="displayRole">Role</small>
+    <!-- Dynamic Role‑Based Sidebar -->
+    <nav id="dynamicNav" class="sidebar-nav"></nav>
+
+    <div class="user-panel">
+      <!-- <img src="" id="userAvatar"> -->
+      <div class="user-info">
+        <strong id="displayUsername">User</strong>
+        <small id="displayRole">Role</small>
+      </div>
+      <button onclick="logout()" class="logout-icon">
+        <i class="fa-solid fa-power-off"></i>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-header">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div class="status-indicator">
+        <div class="dot"></div> System Live
+      </div>
+    </header>
+
+    <div class="content-body" id="mainContainer">
+
+      <!-- ============================
+           ADMIN PANEL
+      ============================= -->
+      <div id="adminSections" class="view-group">
+        <!-- TOP STATS -->
+        <div class="stats-row">
+          <div class="stat-box">
+            <i class="fa-solid fa-user-doctor purple"></i>
+            <div><h4>Doctors</h4><span>Active</span></div>
           </div>
-          <button onclick="logout()" class="logout-icon">
-            <i class="fa-solid fa-power-off"></i>
-          </button>
-        </div>
-      </aside>
-
-      <main class="main-content">
-        <header class="top-header">
-          <h2 id="pageTitle">Dashboard</h2>
-          <div class="status-indicator">
-            <div class="dot"></div> System Live
+          <div class="stat-box">
+            <i class="fa-solid fa-bed-pulse blue"></i>
+            <div><h4>Patients</h4><span>Monitoring</span></div>
           </div>
-        </header>
-
-        <div class="content-body" id="mainContainer">
-
-          <!-- ============================
-               ADMIN PANEL — FULL WIRED
-          ============================= -->
-          <div id="adminSections" class="view-group">
-
-            <!-- TOP STATS -->
-            <div class="stats-row">
-              <div class="stat-box">
-                <i class="fa-solid fa-user-doctor purple"></i>
-                <div><h4>Doctors</h4><span>Active</span></div>
-              </div>
-              <div class="stat-box">
-                <i class="fa-solid fa-bed-pulse blue"></i>
-                <div><h4>Patients</h4><span>Monitoring</span></div>
-              </div>
-              <div class="stat-box">
-                <i class="fa-solid fa-check-circle green"></i>
-                <div><h4>System</h4><span>Optimal</span></div>
-              </div>
-            </div>
-
-            <!-- ADMIN FORMS GRID -->
-            <div class="form-grid-layout">
-
-              <!-- ADMIN: ADD DOCTOR -->
-              <div class="card section" id="adminAddDoctor">
-                <h3>Add Doctor</h3>
-                <input id="docName" class="inp" placeholder="Name">
-                <input id="docEmail" class="inp" placeholder="Email">
-                <input id="docUser" class="inp" placeholder="Username">
-                <button class="btn-primary mt-2" onclick="addDoctor()">Save</button>
-                <span id="docSuccess" class="success-msg">Saved!</span>
-              </div>
-
-              <!-- ADMIN: ADD TECH -->
-              <div class="card section" id="adminAddTech">
-                <h3>Add Technician</h3>
-                <input id="techName" class="inp" placeholder="Name">
-                <input id="techEmail" class="inp" placeholder="Email">
-                <input id="techUser" class="inp" placeholder="Username">
-                <input id="techPass" class="inp" type="password" placeholder="Password">
-                <button class="btn-primary mt-2" onclick="addTechnician()">Save</button>
-                <span id="techSuccess" class="success-msg">Saved!</span>
-              </div>
-
-              <!-- ADMIN: ADD PATIENT -->
-              <div class="card section" id="adminAddPatient">
-                <h3>Add Patient</h3>
-                <input id="patName" class="inp" placeholder="Name">
-                <input id="patEmail" class="inp" placeholder="Email">
-                <input id="patUser" class="inp" placeholder="Username">
-                <input id="patPass" class="inp" type="password" placeholder="Password">
-                <select id="patPriority" class="inp">
-                  <option value="Critical">Critical</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Safe">Safe</option>
-                </select>
-                <button class="btn-primary mt-2" onclick="addPatient()">Save</button>
-                <span id="patSuccess" class="success-msg">Saved!</span>
-              </div>
-
-            </div> <!-- end grid -->
-
-            <!-- SCHEDULE CASE -->
-            <div class="card section mt-4" id="adminSchedule">
-              <h3>Schedule Scan</h3>
-              <div class="grid-3">
-
-                <select id="casePatient" class="inp"></select>
-                <select id="caseDoctor" class="inp"></select>
-                <input id="caseDate" class="inp" type="date">
-
-                <select id="caseSlot" class="inp">
-                  <option>09:00 - 10:00</option>
-                  <option>10:00 - 11:00</option>
-                  <option>11:00 - 12:00</option>
-                  <option>14:00 - 15:00</option>
-                </select>
-
-                <select id="caseScanType" class="inp">
-                  <option value="MRI">MRI</option>
-                  <option value="CT">CT Scan</option>
-                  <option value="X-Ray">X-Ray</option>
-                </select>
-
-                <select id="casePriority" class="inp">
-                  <option value="Critical">Critical</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Safe">Safe</option>
-                </select>
-
-                <input id="caseRefDoc" class="inp full" placeholder="Referring Doctor">
-                <textarea id="caseSymptoms" class="inp full" placeholder="Symptoms"></textarea>
-
-              </div>
-
-              <button class="btn-primary mt-2" onclick="scheduleCase()">Schedule</button>
-              <span id="caseSuccess" class="success-msg">Done!</span>
-            </div>
-
-            <!-- ADMIN CASES LIST -->
-            <div class="section mt-4" id="adminCases">
-              <div class="cards-list" id="adminCasesList"></div>
-            </div>
-
-          </div> <!-- END ADMIN -->
-
-        <!-- === ADMIN DASHBOARD SECTIONS === -->
-        <div id="adminSections" class="view-group">
-
-          <!-- DASHBOARD STATS -->
-          <div class="stats-row">
-            <div class="stat-box">
-              <i class="fa-solid fa-user-doctor purple"></i>
-              <div><h4>Doctors</h4><span>Active</span></div>
-            </div>
-            <div class="stat-box">
-              <i class="fa-solid fa-bed-pulse blue"></i>
-              <div><h4>Patients</h4><span>Monitoring</span></div>
-            </div>
-            <div class="stat-box">
-              <i class="fa-solid fa-check-circle green"></i>
-              <div><h4>System</h4><span>Optimal</span></div>
-            </div>
-          </div>
-
-          <!-- FORM GRID: ADD USERS -->
-          <div class="form-grid-layout">
-
-            <!-- ADD DOCTOR -->
-            <div class="card section" id="adminAddDoctor">
-              <h3>Add Doctor</h3>
-              <input id="docName" placeholder="Name" class="inp">
-              <input id="docEmail" placeholder="Email" class="inp">
-              <input id="docUser" placeholder="Username" class="inp">
-              <input id="docPass" type="password" placeholder="Password" class="inp">
-
-              <button class="btn-primary mt-2" onclick="addDoctor()">Save</button>
-              <span id="docSuccess" class="success-msg">Saved!</span>
-            </div>
-
-            <!-- ADD TECHNICIAN -->
-            <div class="card section" id="adminAddTech">
-              <h3>Add Technician</h3>
-              <input id="techName" placeholder="Name" class="inp">
-              <input id="techEmail" placeholder="Email" class="inp">
-              <input id="techUser" placeholder="Username" class="inp">
-              <input id="techPass" type="password" placeholder="Password" class="inp">
-
-              <button class="btn-primary mt-2" onclick="addTechnician()">Save</button>
-              <span id="techSuccess" class="success-msg">Saved!</span>
-            </div>
-
-            <!-- ADD RADIOLOGIST -->
-            <div class="card section" id="adminAddRadiologist">
-              <h3>Add Radiologist</h3>
-              <input id="radioName" placeholder="Name" class="inp">
-              <input id="radioEmail" placeholder="Email" class="inp">
-              <input id="radioUser" placeholder="Username" class="inp">
-              <input id="radioPass" type="password" placeholder="Password" class="inp">
-
-              <button class="btn-primary mt-2" onclick="addRadiologist()">Save</button>
-              <span id="radioSuccess" class="success-msg">Saved!</span>
-            </div>
-
-            <!-- ADD PATIENT -->
-            <div class="card section" id="adminAddPatient">
-              <h3>Add Patient</h3>
-              <input id="patName" placeholder="Name" class="inp">
-              <input id="patEmail" placeholder="Email" class="inp">
-              <input id="patUser" placeholder="Username" class="inp">
-              <input id="patPass" type="password" placeholder="Password" class="inp">
-
-              <select id="patPriority" class="inp">
-                <option value="Critical">Critical</option>
-                <option value="Medium">Medium</option>
-                <option value="Safe">Safe</option>
-              </select>
-
-              <button class="btn-primary mt-2" onclick="addPatient()">Save</button>
-              <span id="patSuccess" class="success-msg">Saved!</span>
-            </div>
-
-          </div>
-
-          <!-- SCHEDULE CASE -->
-          <div class="card section mt-4" id="adminSchedule">
-            <h3>Schedule Scan</h3>
-
-            <div class="grid-3">
-              <select id="casePatient" class="inp"></select>
-              <select id="caseDoctor" class="inp"></select>
-              <input type="date" id="caseDate" class="inp">
-
-              <select id="caseSlot" class="inp">
-                <option>09:00 - 10:00</option>
-                <option>10:00 - 11:00</option>
-                <option>11:00 - 12:00</option>
-                <option>14:00 - 15:00</option>
-              </select>
-
-              <select id="caseScanType" class="inp">
-                <option value="MRI">MRI</option>
-                <option value="CT">CT Scan</option>
-                <option value="X-Ray">X-Ray</option>
-              </select>
-
-              <select id="casePriority" class="inp">
-                <option value="Critical">Critical</option>
-                <option value="Medium">Medium</option>
-                <option value="Safe">Safe</option>
-              </select>
-
-              <input id="caseRefDoc" placeholder="Ref Doctor" class="inp full">
-              <textarea id="caseSymptoms" placeholder="Symptoms" class="inp full"></textarea>
-            </div>
-
-            <button class="btn-primary mt-2" onclick="scheduleCase()">Schedule</button>
-            <span id="caseSuccess" class="success-msg">Done!</span>
-          </div>
-
-          <!-- EXISTING CASES -->
-          <div class="section mt-4" id="adminCases">
-            <div class="cards-list" id="adminCasesList"></div>
+          <div class="stat-box">
+            <i class="fa-solid fa-check-circle green"></i>
+            <div><h4>System</h4><span>Optimal</span></div>
           </div>
         </div>
 
-        <!-- === DOCTOR VIEW === -->
-        <div id="doctorCasesView" class="view-group" style="display:none">
-          <div class="cards-list" id="doctorCasesList"></div>
+        <!-- ADMIN FORMS GRID -->
+        <div class="form-grid-layout">
+          <!-- ADMIN: ADD DOCTOR -->
+          <div class="card section" id="adminAddDoctor">
+            <h3>Add Doctor</h3>
+            <input id="docName" class="inp" placeholder="Name">
+            <input id="docEmail" class="inp" placeholder="Email">
+            <input id="docUser" class="inp" placeholder="Username">
+            <input id="docPass" class="inp" type="password" placeholder="Password">
+            <button class="btn-primary mt-2" onclick="addDoctor()">Save</button>
+            <span id="docSuccess" class="success-msg">Saved!</span>
+          </div>
+
+          <!-- ADMIN: ADD TECH -->
+          <div class="card section" id="adminAddTech">
+            <h3>Add Technician</h3>
+            <input id="techName" class="inp" placeholder="Name">
+            <input id="techEmail" class="inp" placeholder="Email">
+            <input id="techUser" class="inp" placeholder="Username">
+            <input id="techPass" class="inp" type="password" placeholder="Password">
+            <button class="btn-primary mt-2" onclick="addTechnician()">Save</button>
+            <span id="techSuccess" class="success-msg">Saved!</span>
+          </div>
+
+          <!-- ADMIN: ADD RADIOLOGIST -->
+          <div class="card section" id="adminAddRadiologist">
+            <h3>Add Radiologist</h3>
+            <input id="radioName" class="inp" placeholder="Name">
+            <input id="radioEmail" class="inp" placeholder="Email">
+            <input id="radioUser" class="inp" placeholder="Username">
+            <input id="radioPass" class="inp" type="password" placeholder="Password">
+            <button class="btn-primary mt-2" onclick="addRadiologist()">Save</button>
+            <span id="radioSuccess" class="success-msg">Saved!</span>
+          </div>
+
+          <!-- ADMIN: ADD PATIENT -->
+          <div class="card section" id="adminAddPatient">
+            <h3>Add Patient</h3>
+            <input id="patName" class="inp" placeholder="Name">
+            <input id="patEmail" class="inp" placeholder="Email">
+            <input id="patUser" class="inp" placeholder="Username">
+            <input id="patPass" class="inp" type="password" placeholder="Password">
+            <select id="patPriority" class="inp">
+              <option value="Critical">Critical</option>
+              <option value="Medium">Medium</option>
+              <option value="Safe">Safe</option>
+            </select>
+            <button class="btn-primary mt-2" onclick="addPatient()">Save</button>
+            <span id="patSuccess" class="success-msg">Saved!</span>
+          </div>
         </div>
 
-        <!-- === PATIENT VIEW === -->
-        <div id="patientCasesView" class="view-group" style="display:none">
-          <div class="cards-list" id="patientCasesList"></div>
+        <!-- SCHEDULE CASE -->
+        <div class="card section mt-4" id="adminSchedule">
+          <h3>Schedule Scan</h3>
+          <div class="grid-3">
+            <select id="casePatient" class="inp"></select>
+            <select id="caseDoctor" class="inp"></select>
+            <input id="caseDate" class="inp" type="date">
+            <select id="caseSlot" class="inp">
+              <option>09:00 - 10:00</option>
+              <option>10:00 - 11:00</option>
+              <option>11:00 - 12:00</option>
+              <option>14:00 - 15:00</option>
+            </select>
+            <select id="caseScanType" class="inp">
+              <option value="MRI">MRI</option>
+              <option value="CT">CT Scan</option>
+              <option value="X-Ray">X-Ray</option>
+            </select>
+            <select id="casePriority" class="inp">
+              <option value="Critical">Critical</option>
+              <option value="Medium">Medium</option>
+              <option value="Safe">Safe</option>
+            </select>
+            <input id="caseRefDoc" class="inp full" placeholder="Referring Doctor">
+            <textarea id="caseSymptoms" class="inp full" placeholder="Symptoms"></textarea>
+          </div>
+          <button class="btn-primary mt-2" onclick="scheduleCase()">Schedule</button>
+          <span id="caseSuccess" class="success-msg">Done!</span>
         </div>
 
-        <!-- === TECH VIEW === -->
-        <div id="techCasesView" class="view-group" style="display:none">
-          <div class="cards-list" id="techCasesList"></div>
+        <!-- ADMIN CASES LIST -->
+        <div class="section mt-4" id="adminCases">
+          <div class="cards-list" id="adminCasesList"></div>
         </div>
+      </div> <!-- END ADMIN SECTIONS -->
 
-        <!-- === RADIOLOGIST VIEW === -->
-        <div id="radioCasesView" class="view-group" style="display:none">
-          <div class="cards-list" id="radioCasesList"></div>
-        </div>
+      <!-- === DOCTOR VIEW === -->
+      <div id="doctorCasesView" class="view-group" style="display:none">
+        <div class="cards-list" id="doctorCasesList">Doctor Cases Loading...</div>
+      </div>
 
-      </div> <!-- END content-body -->
+      <!-- === PATIENT VIEW === -->
+      <div id="patientCasesView" class="view-group" style="display:none">
+        <div class="cards-list" id="patientCasesList">Patient Cases Loading...</div>
+      </div>
 
-    </main>
-  </div> <!-- END appLayout -->
-    </main>
-  </div> <!-- END OF #appLayout -->
+      <!-- === TECH VIEW === -->
+      <div id="techCasesView" class="view-group" style="display:none">
+        <div class="cards-list" id="techCasesList">Tech Cases Loading...</div>
+      </div>
 
-  <!-- ============================
-        MAIN SCRIPT
-  ============================= -->
-  <script src="script.js"></script>
+      <!-- === RADIOLOGIST VIEW === -->
+      <div id="radioCasesView" class="view-group" style="display:none">
+        <div class="cards-list" id="radioCasesList">Radiologist Cases Loading...</div>
+      </div>
 
-  <!-- ============================
-        NAVIGATION HANDLERS
-  ============================= -->
-  <script>
-    // Go from Landing → Login
-    function navigateToLogin() {
-      document.getElementById("landingPage").style.display = "none";
-      document.getElementById("loginPage").style.display = "flex";
-    }
+    </div> <!-- END content-body -->
+  </main>
+</div> <!-- END appLayout -->
 
-    // Back to Landing
-    function navigateToHome() {
-      document.getElementById("loginPage").style.display = "none";
-      document.getElementById("landingPage").style.display = "block";
-    }
-
-    // Open App Layout after login
-    function openDashboardForRole() {
-      document.getElementById("landingPage").style.display = "none";
-      document.getElementById("loginPage").style.display = "none";
-      document.getElementById("appLayout").style.display = "flex";
-    }
-  </script>
-
-  <!-- PREVENT LAYOUT FLASH -->
-  <script>
-    document.body.style.opacity = "1";
-  </script>
-
+<script src="script.js"></script>
 </body>
 </html>
