@@ -1,785 +1,635 @@
-// ======================= CONFIG =======================
+/* ============================================================
+   FRONTEND SCRIPT.JS — FINAL VERSION (Matches Latest Server.js)
+   ============================================================ */
 
-// CHANGE THIS LATER TO YOUR REAL IP
 const API_BASE = "https://radiology-backend-vvor.onrender.com";
 
-
-
-// SOCKET.IO CLIENT — REALTIME SYNC
+// GLOBAL STATE
 let socket = null;
-
-// GLOBALS
 let currentUser = null;
 let currentRole = "admin";
 
-// ======================= HELPERS =======================
+/* ============================================================
+   GENERIC API REQUEST WRAPPER
+   ============================================================ */
 async function apiRequest(path, options = {}) {
-  const finalOptions = {
-    method: options.method || "GET",
-    headers: options.headers || {},
-    credentials: "include",
-  };
+    const finalOptions = {
+        method: options.method || "GET",
+        headers: options.headers || {},
+        credentials: "include",
+    };
 
-  if (options.body && !(options.body instanceof FormData)) {
-    finalOptions.headers["Content-Type"] = "application/json";
-    finalOptions.body = JSON.stringify(options.body);
-  } else if (options.body instanceof FormData) {
-    finalOptions.body = options.body;
-  }
+    if (options.body && !(options.body instanceof FormData)) {
+        finalOptions.headers["Content-Type"] = "application/json";
+        finalOptions.body = JSON.stringify(options.body);
+    } else if (options.body instanceof FormData) {
+        finalOptions.body = options.body;
+    }
 
-  const res = await fetch(`${API_BASE}${path}`, finalOptions);
-  let data;
+    const res = await fetch(`${API_BASE}${path}`, finalOptions);
+    let data;
 
-  try { data = await res.json(); }
-  catch { data = null; }
+    try { data = await res.json(); }
+    catch { data = null; }
 
-  if (!res.ok) {
-    throw new Error((data && data.message) || `Request failed: ${res.status}`);
-  }
+    if (!res.ok) {
+        throw new Error((data && data.message) || `Request failed: ${res.status}`);
+    }
 
-  return data;
+    return data;
 }
 
+/* ============================================================
+   BADGE HELPERS
+   ============================================================ */
 function priorityBadge(p) {
-  if (p === "Critical") return `<span class="badge badge-critical">Critical</span>`;
-  if (p === "Medium")   return `<span class="badge badge-medium">Medium</span>`;
-  return `<span class="badge badge-safe">Safe</span>`;
+    if (p === "Critical") return `<span class="badge badge-critical">Critical</span>`;
+    if (p === "Medium") return `<span class="badge badge-medium">Medium</span>`;
+    return `<span class="badge badge-safe">Safe</span>`;
 }
 
-// ======================= ROLE TOGGLE =======================
+/* ============================================================
+   ROLE TOGGLE
+   ============================================================ */
 const roleToggle = document.getElementById("roleToggle");
 const loginError = document.getElementById("loginError");
 const loginIdInput = document.getElementById("loginId");
 const loginPasswordInput = document.getElementById("loginPassword");
 
 function updatePlaceholder(role) {
-  switch(role) {
-    case "admin":       loginIdInput.placeholder = "admin"; break;
-    case "doctor":      loginIdInput.placeholder = "doctor@example.com"; break;
-    case "technician":  loginIdInput.placeholder = "tech@example.com"; break;
-    case "radiologist": loginIdInput.placeholder = "radiologist"; break;
-    case "patient":     loginIdInput.placeholder = "patient@example.com"; break;
-  }
+    switch (role) {
+        case "admin": loginIdInput.placeholder = "admin"; break;
+        case "doctor": loginIdInput.placeholder = "doctor@example.com"; break;
+        case "technician": loginIdInput.placeholder = "tech@example.com"; break;
+        case "radiologist": loginIdInput.placeholder = "radiologist"; break;
+        case "patient": loginIdInput.placeholder = "patient@example.com"; break;
+    }
 }
 
 if (roleToggle) {
-  roleToggle.addEventListener("click", (e) => {
-    const btn = e.target.closest(".role-btn");
-    if (!btn) return;
+    roleToggle.addEventListener("click", (e) => {
+        const btn = e.target.closest(".role-btn");
+        if (!btn) return;
 
-    document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+        document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
 
-    currentRole = btn.dataset.role;
-    updatePlaceholder(currentRole);
-    loginError.style.display = "none";
-  });
+        currentRole = btn.dataset.role;
+        updatePlaceholder(currentRole);
+        loginError.style.display = "none";
+    });
 }
-// ======================= LOGIN =======================
+
+/* ============================================================
+   LOGIN FLOW
+   ============================================================ */
 document.getElementById("loginBtn")?.addEventListener("click", handleLogin);
 
 async function handleLogin() {
-  const id = loginIdInput.value.trim();
-  const pw = loginPasswordInput.value.trim();
+    const username = loginIdInput.value.trim();
+    const password = loginPasswordInput.value.trim();
 
-  loginError.style.display = "none";
+    loginError.style.display = "none";
 
-  if (!id || !pw) {
-    loginError.textContent = "Please fill both fields.";
-    loginError.style.display = "block";
-    return;
-  }
-
-  try {
-    const data = await apiRequest("/auth/login", {
-      method: "POST",
-      body: { username: id, password: pw, role: currentRole }
-    });
-
-    if (!data.success) {
-      loginError.textContent = data.message || "Invalid credentials.";
-      loginError.style.display = "block";
-      return;
+    if (!username || !password) {
+        loginError.textContent = "Please fill both fields.";
+        loginError.style.display = "block";
+        return;
     }
 
-    currentUser = data.user;
-    currentRole = data.user.role;
+    try {
+        const data = await apiRequest("/auth/login", {
+            method: "POST",
+            body: { username, password, role: currentRole }
+        });
 
-    openDashboardForRole();
-    setupSocket();
+        if (!data.success) {
+            loginError.textContent = data.message;
+            loginError.style.display = "block";
+            return;
+        }
 
-  } catch (err) {
-    loginError.textContent = err.message || "Login failed.";
-    loginError.style.display = "block";
-  }
-}
+        currentUser = data.user;
+        currentRole = data.user.role;
 
-function openDashboardForRole() {
-  if (currentRole === "admin") {
-    openDashboard("adminDashboard");
-    initAdminUI();
-  } else if (currentRole === "doctor") {
-    openDashboard("doctorDashboard");
-    renderDoctorCases();
-  } else if (currentRole === "technician") {
-    openDashboard("techDashboard");
-    renderTechCases();
-  } else if (currentRole === "radiologist") {
-    openDashboard("radioDashboard");
-    renderRadioCases();
-  } else if (currentRole === "patient") {
-    openDashboard("patientDashboard");
-    renderPatientCases();
-  }
+        openDashboardForRole();
+        setupSocket();
+
+    } catch (err) {
+        loginError.textContent = err.message || "Login failed.";
+        loginError.style.display = "block";
+    }
 }
 
 function openDashboard(id) {
-  document.getElementById("loginCard").style.display = "none";
-  document.querySelectorAll(".dashboard").forEach(d => d.style.display = "none");
-  document.getElementById(id).style.display = "block";
+    document.getElementById("loginCard").style.display = "none";
+    document.querySelectorAll(".dashboard").forEach(d => d.style.display = "none");
+    document.getElementById(id).style.display = "block";
 }
 
-// ======================= LOGOUT =======================
+function openDashboardForRole() {
+    if (currentRole === "admin") {
+        openDashboard("adminDashboard");
+        initAdminUI();
+    }
+    if (currentRole === "doctor") {
+        openDashboard("doctorDashboard");
+        renderDoctorCases();
+    }
+    if (currentRole === "technician") {
+        openDashboard("techDashboard");
+        renderTechCases();
+    }
+    if (currentRole === "radiologist") {
+        openDashboard("radioDashboard");
+        renderRadioCases();
+    }
+    if (currentRole === "patient") {
+        openDashboard("patientDashboard");
+        renderPatientCases();
+    }
+}
+
+/* ============================================================
+   LOGOUT
+   ============================================================ */
 async function logout() {
-  try { await apiRequest("/auth/logout", { method: "POST" }); }
-  catch {}
+    try { await apiRequest("/auth/logout", { method: "POST" }); } catch {}
 
-  currentUser = null;
-  currentRole = "admin";
-
-  document.getElementById("loginCard").style.display = "block";
-  document.querySelectorAll(".dashboard").forEach(d => d.style.display = "none");
-
-  loginIdInput.value = "";
-  loginPasswordInput.value = "";
-
-  document.querySelectorAll(".role-btn")
-    .forEach(b => b.classList.remove("active"));
-
-  document.querySelector('.role-btn[data-role="admin"]').classList.add("active");
-  updatePlaceholder("admin");
+    location.reload();
 }
 
-// ======================= ADMIN UI =======================
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
 function initAdminUI() {
-  document.querySelectorAll("#adminDashboard .tab-link").forEach(btn => {
-    btn.addEventListener("click", () => {
-      showAdminSection(btn.dataset.target);
+    document.querySelectorAll("#adminDashboard .tab-link").forEach(btn => {
+        btn.addEventListener("click", () => {
+            showAdminSection(btn.dataset.target);
 
-      document.querySelectorAll("#adminDashboard .tab-link")
-        .forEach(b => b.classList.remove("active"));
+            document.querySelectorAll("#adminDashboard .tab-link")
+                .forEach(b => b.classList.remove("active"));
 
-      btn.classList.add("active");
+            btn.classList.add("active");
+        });
     });
-  });
 
-  showAdminSection("adminAddDoctor");
-  refreshAdminDropdowns();
-  renderAdminCases();
+    showAdminSection("adminAddDoctor");
+    refreshAdminDropdowns();
+    renderAdminCases();
 }
 
 function showAdminSection(id) {
-  document.querySelectorAll("#adminDashboard .section")
-    .forEach(s => s.style.display = "none");
-
-  const target = document.getElementById(id);
-  if (target) target.style.display = "block";
+    document.querySelectorAll("#adminDashboard .section")
+        .forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
 }
 
-// ---- Admin: Add Doctor ----
+/* ---- ADD DOCTOR ---- */
 async function addDoctor() {
-  const name = document.getElementById("docName").value.trim();
-  const email = document.getElementById("docEmail").value.trim();
-  const username = document.getElementById("docUser").value.trim();
-
-  if (!name || !email || !username) return;
-
-  try {
-    const res = await apiRequest("/admin/doctor", {
-      method: "POST",
-      body: { name, email, username }
-    });
-
-    if (!res.success) return alert(res.message);
-
-    document.getElementById("docSuccess").style.display = "block";
-    setTimeout(() => document.getElementById("docSuccess").style.display = "none", 1600);
-
-    document.getElementById("docName").value = "";
-    document.getElementById("docEmail").value = "";
-    document.getElementById("docUser").value = "";
-
-    refreshAdminDropdowns();
-
-    if (socket) socket.emit("admin-updated");
-
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-// ---- Admin: Add Technician ----
-async function addTechnician() {
-  const name = document.getElementById("techName").value.trim();
-  const email = document.getElementById("techEmail").value.trim();
-  const username = document.getElementById("techUser").value.trim();
-  const password = document.getElementById("techPass").value.trim();
-
-  if (!name || !email || !username || !password) return;
-
-  try {
-    const res = await apiRequest("/admin/technician", {
-      method: "POST",
-      body: { name, email, username, password }
-    });
-
-    if (!res.success) return alert(res.message);
-
-    document.getElementById("techSuccess").style.display = "block";
-    setTimeout(() => document.getElementById("techSuccess").style.display = "none", 1600);
-
-    document.getElementById("techName").value = "";
-    document.getElementById("techEmail").value = "";
-    document.getElementById("techUser").value = "";
-    document.getElementById("techPass").value = "";
-
-    if (socket) socket.emit("admin-updated");
-
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-// ---- Admin: Add Patient ----
-async function addPatient() {
-  const name = document.getElementById("patName").value.trim();
-  const email = document.getElementById("patEmail").value.trim();
-  const username = document.getElementById("patUser").value.trim();
-  const password = document.getElementById("patPass").value.trim();
-  const basePriority = document.getElementById("patPriority").value;
-
-  if (!name || !email || !username || !password) return;
-
-  try {
-    const res = await apiRequest("/admin/patient", {
-      method: "POST",
-      body: { name, email, username, password, basePriority }
-    });
-
-    if (!res.success) return alert(res.message);
-
-    document.getElementById("patSuccess").style.display = "block";
-    setTimeout(() => document.getElementById("patSuccess").style.display = "none", 1600);
-
-    document.getElementById("patName").value = "";
-    document.getElementById("patEmail").value = "";
-    document.getElementById("patUser").value = "";
-    document.getElementById("patPass").value = "";
-    document.getElementById("patPriority").value = "Critical";
-
-    refreshAdminDropdowns();
-
-    if (socket) socket.emit("admin-updated");
-
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-// ---- Admin: Refresh Dropdowns ----
-async function refreshAdminDropdowns() {
-  const patSelect = document.getElementById("casePatient");
-  const docSelect = document.getElementById("caseDoctor");
-
-  if (!patSelect || !docSelect) return;
-
-  patSelect.innerHTML = "";
-  docSelect.innerHTML = "";
-
-  try {
-    const data = await apiRequest("/admin/lists");
-
-    data.patients?.forEach(p => {
-      const opt = document.createElement("option");
-      opt.value = p.username;
-      opt.textContent = `${p.name} (${p.username})`;
-      patSelect.appendChild(opt);
-    });
-
-    data.doctors?.forEach(d => {
-      const opt = document.createElement("option");
-      opt.value = d.username;
-      opt.textContent = `${d.name} (${d.username})`;
-      docSelect.appendChild(opt);
-    });
-
-  } catch (err) {
-    console.error("Dropdown refresh failed:", err);
-  }
-}
-
-// ---- Admin: Schedule New Case ----
-async function scheduleCase() {
-  const patientUsername = document.getElementById("casePatient").value;
-  const doctorUsername  = document.getElementById("caseDoctor").value;
-  const date = document.getElementById("caseDate").value;
-  const timeSlot = document.getElementById("caseSlot").value;
-  const scanType = document.getElementById("caseScanType").value;
-  const priority = document.getElementById("casePriority").value;
-  const refDoctor = document.getElementById("caseRefDoc").value.trim();
-  const symptoms = document.getElementById("caseSymptoms").value.trim();
-
-  if (!patientUsername || !doctorUsername || !date || !timeSlot) return;
-
-  try {
-    const res = await apiRequest("/admin/case", {
-      method: "POST",
-      body: {
-        patientUsername,
-        doctorUsername,
-        date,
-        timeSlot,
-        scanType,
-        priority,
-        refDoctor,
-        symptoms
-      }
-    });
-
-    if (!res.success) return alert(res.message);
-
-    document.getElementById("caseSuccess").style.display = "block";
-    setTimeout(() => document.getElementById("caseSuccess").style.display = "none", 1600);
-
-    document.getElementById("caseSymptoms").value = "";
-    document.getElementById("caseRefDoc").value = "";
-
-    renderAdminCases();
-
-    if (socket) socket.emit("case-created");
-
-  } catch (err) {
-    alert(err.message);
-  }
-}
-
-// ---- Admin: Render All Cases ----
-async function renderAdminCases() {
-  const list = document.getElementById("adminCasesList");
-  if (!list) return;
-
-  list.innerHTML = `<li class="case-card">Loading...</li>`;
-
-  try {
-    const data = await apiRequest("/admin/cases");
-    const cases = data.cases || [];
-
-    if (!cases.length) {
-      list.innerHTML = `<li class="case-card">No cases found.</li>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    cases.forEach(c => {
-      const li = document.createElement("li");
-      li.className = "case-card";
-
-      const patientName = c.patientName || c.patientUsername;
-      const doctorName  = c.doctorName  || c.doctorUsername;
-
-      li.innerHTML = `
-        <div class="case-top">
-          <div><b>${c.id}</b></div>
-          <div>
-            <span class="badge badge-scan">${c.scanType}</span>
-            ${priorityBadge(c.priority)}
-          </div>
-        </div>
-        <div class="case-meta-line"><span class="label-inline">Patient:</span> ${patientName}</div>
-        <div class="case-meta-line"><span class="label-inline">Doctor:</span> ${doctorName}</div>
-        <div class="case-meta-line"><span class="label-inline">When:</span> ${c.date} • ${c.timeSlot}</div>
-        <div class="case-meta-line"><span class="label-inline">Ref:</span> ${c.refDoctor || "-"}</div>
-      `;
-
-      list.appendChild(li);
-    });
-
-  } catch (err) {
-    list.innerHTML = `<li class="case-card">Error loading cases.</li>`;
-  }
-}
-// ======================= DOCTOR VIEW =======================
-async function renderDoctorCases() {
-  const list = document.getElementById("doctorCasesList");
-  if (!list || !currentUser) return;
-
-  list.innerHTML = `<li class="case-card">Loading...</li>`;
-
-  try {
-    const data = await apiRequest(`/doctor/cases/${encodeURIComponent(currentUser.username)}`);
-    const cases = data.cases || [];
-
-    if (!cases.length) {
-      list.innerHTML = `<li class="case-card">No assigned cases yet.</li>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    cases.forEach(c => {
-      const patName = c.patientName || c.patientUsername || "?";
-
-      const li = document.createElement("li");
-      li.className = "case-card";
-
-      li.innerHTML = `
-        <div class="case-top">
-          <div><b>${patName}</b></div>
-          <div>
-            ${priorityBadge(c.priority)}
-            <span class="badge badge-scan">${c.scanType}</span>
-          </div>
-        </div>
-
-        <div class="case-meta-line"><span class="label-inline">Case:</span> ${c.id}</div>
-        <div class="case-meta-line"><span class="label-inline">When:</span> ${c.date} • ${c.timeSlot}</div>
-        <div class="case-meta-line"><span class="label-inline">Symptoms:</span> ${c.symptoms || "-"}</div>
-        <div class="case-meta-line"><span class="label-inline">Ref:</span> ${c.refDoctor || "-"}</div>
-
-        <div class="notes-block">
-          <span class="label-inline">Doctor Notes:</span>
-          <textarea class="input-inline" data-case="${c.id}" data-field="notes">${c.doctorNotes || ""}</textarea>
-
-          <span class="label-inline">Prescription:</span>
-          <textarea class="input-inline" data-case="${c.id}" data-field="presc">${c.prescription || ""}</textarea>
-
-          <button class="small-btn" onclick="saveDoctorNotes('${c.id}', this)">Save</button>
-        </div>
-      `;
-
-      list.appendChild(li);
-    });
-
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = `<li class="case-card">Error loading doctor cases.</li>`;
-  }
-}
-
-async function saveDoctorNotes(caseId, btnEl) {
-  const card = btnEl.closest(".case-card");
-
-  const notesEl = card.querySelector(`textarea[data-case="${caseId}"][data-field="notes"]`);
-  const prescEl = card.querySelector(`textarea[data-case="${caseId}"][data-field="presc"]`);
-
-  const doctorNotes = notesEl.value.trim();
-  const prescription = prescEl.value.trim();
-
-  try {
-    await apiRequest(`/doctor/notes/${encodeURIComponent(caseId)}`, {
-      method: "POST",
-      body: { doctorNotes }
-    });
-
-    await apiRequest(`/doctor/prescription/${encodeURIComponent(caseId)}`, {
-      method: "POST",
-      body: { prescription }
-    });
-
-    btnEl.textContent = "Saved";
-    setTimeout(() => btnEl.textContent = "Save", 1100);
-
-    if (socket) socket.emit("doctor-updated", { caseId });
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Failed to save notes.");
-  }
-}
-
-
-
-// ======================= PATIENT VIEW =======================
-async function renderPatientCases() {
-  const list = document.getElementById("patientCasesList");
-  if (!list || !currentUser) return;
-
-  list.innerHTML = `<li class="case-card">Loading...</li>`;
-
-  try {
-    const data = await apiRequest(`/patient/cases/${encodeURIComponent(currentUser.username)}`);
-    const cases = data.cases || [];
-
-    if (!cases.length) {
-      list.innerHTML = `<li class="case-card">No scheduled cases.</li>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    cases.forEach(c => {
-      const docName = c.doctorName || c.doctorUsername || "?";
-
-      const li = document.createElement("li");
-      li.className = "case-card";
-
-      li.innerHTML = `
-        <div class="case-top">
-          <div><b>${c.scanType}</b></div>
-          <div>${priorityBadge(c.priority)}</div>
-        </div>
-
-        <div class="case-meta-line"><span class="label-inline">Case:</span> ${c.id}</div>
-        <div class="case-meta-line"><span class="label-inline">Doctor:</span> ${docName} (${c.doctorUsername})</div>
-        <div class="case-meta-line"><span class="label-inline">When:</span> ${c.date} • ${c.timeSlot}</div>
-
-        <div class="notes-block">
-          <span class="label-inline">Prescription:</span>
-          ${c.prescription ? c.prescription : "<span class='muted'>Not yet provided</span>"}
-        </div>
-      `;
-
-      list.appendChild(li);
-    });
-
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = `<li class="case-card">Error loading patient cases.</li>`;
-  }
-}
-// ======================= TECHNICIAN VIEW =======================
-async function renderTechCases() {
-  const list = document.getElementById("techCasesList");
-  if (!list) return;
-
-  list.innerHTML = `<li class="case-card">Loading...</li>`;
-
-  try {
-    const data = await apiRequest("/tech/cases");
-    const cases = data.cases || [];
-
-    if (!cases.length) {
-      list.innerHTML = `<li class="case-card">No scheduled cases.</li>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    cases.forEach(c => {
-      const patName = c.patientName || c.patientUsername || "?";
-      const imagesCount = c.images?.length || 0;
-
-      const li = document.createElement("li");
-      li.className = "case-card";
-
-      li.innerHTML = `
-        <div class="case-top">
-          <div><b>${c.id}</b></div>
-          <div class="badge badge-scan">${c.scanType}</div>
-        </div>
-
-        <div class="case-meta-line"><span class="label-inline">Patient:</span> ${patName} (${c.patientUsername})</div>
-        <div class="case-meta-line"><span class="label-inline">Date:</span> ${c.date} • ${c.timeSlot}</div>
-        <div class="case-meta-line"><span class="label-inline">Images:</span> ${imagesCount}</div>
-
-        <div class="notes-block" style="margin-top:6px;">
-          <span class="label-inline">Upload Images:</span><br>
-          <input type="file" multiple accept="image/*" class="input-inline" data-case="${c.id}">
-          <button class="small-btn" onclick="uploadImagesForCase('${c.id}', this)">Upload</button>
-        </div>
-      `;
-
-      list.appendChild(li);
-    });
-
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = `<li class="case-card">Error loading technician cases.</li>`;
-  }
-}
-
-async function uploadImagesForCase(caseId, btnEl) {
-  const card = btnEl.closest(".case-card");
-  const input = card.querySelector(`input[data-case="${caseId}"]`);
-
-  if (!input.files.length) {
-    alert("Choose at least one image.");
-    return;
-  }
-
-  const formData = new FormData();
-  Array.from(input.files).forEach(f => formData.append("images", f));
-
-  try {
-    await apiRequest(`/tech/upload/${encodeURIComponent(caseId)}`, {
-      method: "POST",
-      body: formData
-    });
-
-    input.value = "";
-    renderTechCases();
-
-    if (socket) socket.emit("images-updated", { caseId });
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Failed to upload images.");
-  }
-}
-
-
-
-// ======================= RADIOLOGIST VIEW =======================
-async function renderRadioCases() {
-  const list = document.getElementById("radioCasesList");
-  if (!list) return;
-
-  list.innerHTML = `<li class="case-card">Loading...</li>`;
-
-  try {
-    const data = await apiRequest("/radio/cases");
-    const cases = data.cases || [];
-
-    if (!cases.length) {
-      list.innerHTML = `<li class="case-card">No cases with images yet.</li>`;
-      return;
-    }
-
-    list.innerHTML = "";
-
-    cases.forEach(c => {
-      const patName = c.patientName || c.patientUsername || "?";
-      const docName = c.doctorName || c.doctorUsername || "?";
-
-      const li = document.createElement("li");
-      li.className = "case-card";
-
-      li.innerHTML = `
-        <div class="case-top">
-          <div><b>${c.id}</b></div>
-          <div>
-            ${priorityBadge(c.priority)}
-            <span class="badge badge-scan">${c.scanType}</span>
-          </div>
-        </div>
-
-        <div class="case-meta-line"><span class="label-inline">Patient:</span> ${patName} (${c.patientUsername})</div>
-        <div class="case-meta-line"><span class="label-inline">Doctor:</span> ${docName} (${c.doctorUsername})</div>
-        <div class="case-meta-line"><span class="label-inline">When:</span> ${c.date} • ${c.timeSlot}</div>
-        <div class="case-meta-line"><span class="label-inline">Symptoms:</span> ${c.symptoms || "-"}</div>
-
-        <div class="notes-block">
-          <span class="label-inline">Images:</span>
-          <div class="image-strip" data-case="${c.id}"></div>
-        </div>
-
-        <div class="notes-block" style="margin-top:6px;">
-          <span class="label-inline">Radiologist Notes:</span>
-          <textarea class="input-inline" data-case="${c.id}" data-field="rnotes">${c.radiologistNotes || ""}</textarea>
-          <button class="small-btn" onclick="saveRadiologistNotes('${c.id}', this)">Save</button>
-        </div>
-
-        <div class="notes-block" style="margin-top:4px;">
-          <span class="label-inline">Doctor Notes:</span>
-          ${c.doctorNotes || "<span class='muted'>Not added</span>"}
-        </div>
-      `;
-
-      list.appendChild(li);
-
-      // Load thumbnails
-      const holder = li.querySelector(`.image-strip[data-case="${c.id}"]`);
-      if (!c.images?.length) {
-        holder.innerHTML = "<span class='muted'>No images uploaded</span>";
-      } else {
-        c.images.forEach(img => {
-          const url = `${API_BASE}/uploads/${encodeURIComponent(img)}`;
-          const tag = document.createElement("img");
-          tag.src = url;
-          tag.onclick = () => window.open(url, "_blank");
-          holder.appendChild(tag);
+    const name = docName.value.trim();
+    const email = docEmail.value.trim();
+    const username = docUser.value.trim();
+
+    if (!name || !email || !username) return;
+
+    try {
+        await apiRequest("/admin/doctor", {
+            method: "POST",
+            body: { name, email, username }
         });
-      }
-    });
 
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = `<li class="case-card">Error loading radiology queue.</li>`;
-  }
+        docSuccess.style.display = "block";
+        setTimeout(() => docSuccess.style.display = "none", 1500);
+
+        docName.value = "";
+        docEmail.value = "";
+        docUser.value = "";
+
+        refreshAdminDropdowns();
+        socket?.emit("admin-updated");
+    } catch (err) {
+        alert(err.message);
+    }
 }
 
+/* ---- ADD TECH ---- */
+async function addTechnician() {
+    const name = techName.value.trim();
+    const email = techEmail.value.trim();
+    const username = techUser.value.trim();
+    const password = techPass.value.trim();
 
+    if (!name || !email || !username || !password) return;
 
-// ======================= RADIOLOGIST: SAVE NOTES =======================
-async function saveRadiologistNotes(caseId, btnEl) {
-  const card = btnEl.closest(".case-card");
-  const notesEl = card.querySelector(`textarea[data-case="${caseId}"][data-field="rnotes"]`);
+    try {
+        await apiRequest("/admin/technician", {
+            method: "POST",
+            body: { name, email, username, password }
+        });
 
-  const radiologistNotes = notesEl.value.trim();
+        techSuccess.style.display = "block";
+        setTimeout(() => techSuccess.style.display = "none", 1500);
 
-  try {
-    await apiRequest(`/radio/notes/${encodeURIComponent(caseId)}`, {
-      method: "POST",
-      body: { radiologistNotes }
-    });
-
-    btnEl.textContent = "Saved";
-    setTimeout(() => (btnEl.textContent = "Save"), 1000);
-
-    if (socket) socket.emit("radiologist-updated", { caseId });
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Failed to save radiologist notes.");
-  }
+        techName.value = techEmail.value = techUser.value = techPass.value = "";
+        socket?.emit("admin-updated");
+    } catch (err) {
+        alert(err.message);
+    }
 }
-// ======================= SOCKET.IO LIVE UPDATES =======================
 
-// ======================= SOCKET.IO LIVE UPDATES =======================
+/* ---- ADD PATIENT ---- */
+async function addPatient() {
+    const name = patName.value.trim();
+    const email = patEmail.value.trim();
+    const username = patUser.value.trim();
+    const password = patPass.value.trim();
+    const basePriority = patPriority.value;
+
+    if (!name || !email || !username || !password) return;
+
+    try {
+        await apiRequest("/admin/patient", {
+            method: "POST",
+            body: { name, email, username, password, basePriority }
+        });
+
+        patSuccess.style.display = "block";
+        setTimeout(() => patSuccess.style.display = "none", 1500);
+
+        patName.value = patEmail.value = patUser.value = patPass.value = "";
+        patPriority.value = "Critical";
+
+        refreshAdminDropdowns();
+        socket?.emit("admin-updated");
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+/* ---- REFRESH DROPDOWNS ---- */
+async function refreshAdminDropdowns() {
+    const patSelect = casePatient;
+    const docSelect = caseDoctor;
+
+    patSelect.innerHTML = "";
+    docSelect.innerHTML = "";
+
+    try {
+        const data = await apiRequest("/admin/lists");
+
+        data.patients.forEach(p => {
+            const o = document.createElement("option");
+            o.value = p._id;
+            o.textContent = `${p.name} (${p.username})`;
+            patSelect.appendChild(o);
+        });
+
+        data.doctors.forEach(d => {
+            const o = document.createElement("option");
+            o.value = d._id;
+            o.textContent = `${d.name} (${d.username})`;
+            docSelect.appendChild(o);
+        });
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+/* ---- SCHEDULE CASE ---- */
+async function scheduleCase() {
+    const body = {
+        patient: casePatient.value,
+        doctor: caseDoctor.value,
+        date: caseDate.value,
+        timeSlot: caseSlot.value,
+        scanType: caseScanType.value,
+        priority: casePriority.value,
+        refDoctor: caseRefDoc.value,
+        symptoms: caseSymptoms.value,
+    };
+
+    try {
+        await apiRequest("/admin/case", { method: "POST", body });
+
+        caseSuccess.style.display = "block";
+        setTimeout(() => caseSuccess.style.display = "none", 1500);
+
+        caseSymptoms.value = caseRefDoc.value = "";
+        renderAdminCases();
+        socket?.emit("case-created");
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+/* ---- RENDER ADMIN CASES ---- */
+async function renderAdminCases() {
+    const list = adminCasesList;
+    list.innerHTML = "<li class='case-card'>Loading...</li>";
+
+    try {
+        const data = await apiRequest("/admin/cases");
+
+        if (!data.cases.length) {
+            list.innerHTML = "<li class='case-card'>No cases found.</li>";
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.cases.forEach(c => {
+            const li = document.createElement("li");
+            li.className = "case-card";
+            li.innerHTML = `
+                <div class="case-top">
+                    <b>${c._id}</b>
+                    <span class="badge badge-scan">${c.scanType}</span>
+                    ${priorityBadge(c.priority)}
+                </div>
+                <div class="case-meta-line">Patient: ${c.patient?.name || "-"}</div>
+                <div class="case-meta-line">Doctor: ${c.doctor?.name || "-"}</div>
+                <div class="case-meta-line">When: ${c.date} • ${c.timeSlot}</div>
+            `;
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        list.innerHTML = "<li class='case-card'>Error loading cases</li>";
+    }
+}
+
+/* ============================================================
+   DOCTOR PANEL
+   ============================================================ */
+async function renderDoctorCases() {
+    const list = doctorCasesList;
+    list.innerHTML = "<li class='case-card'>Loading...</li>";
+
+    try {
+        const data = await apiRequest(`/doctor/cases/${currentUser.id}`);
+        const cases = data.cases;
+
+        if (!cases.length) {
+            list.innerHTML = "<li class='case-card'>No cases assigned.</li>";
+            return;
+        }
+
+        list.innerHTML = "";
+
+        cases.forEach(c => {
+            const li = document.createElement("li");
+            li.className = "case-card";
+            li.innerHTML = `
+                <div class="case-top">
+                    <b>${c.patient?.name || "-"}</b>
+                    <span class="badge badge-scan">${c.scanType}</span>
+                    ${priorityBadge(c.priority)}
+                </div>
+                <div class="case-meta-line">Case: ${c._id}</div>
+                <div class="case-meta-line">When: ${c.date} • ${c.timeSlot}</div>
+                <div class="case-meta-line">Symptoms: ${c.symptoms}</div>
+
+                <textarea class="input-inline" id="docNote_${c._id}" placeholder="Doctor notes...">${c.diagnosis || ""}</textarea>
+                <input class="input-inline" id="docSeverity_${c._id}" placeholder="Severity" value="${c.severity || ""}">
+                <button class="small-btn" onclick="saveDoctorDiagnosis('${c._id}')">Save</button>
+            `;
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        list.innerHTML = "<li class='case-card'>Error loading cases</li>";
+    }
+}
+
+async function saveDoctorDiagnosis(id) {
+    const diagnosis = document.getElementById(`docNote_${id}`).value;
+    const severity = document.getElementById(`docSeverity_${id}`).value;
+
+    try {
+        await apiRequest(`/doctor/diagnosis/${id}`, {
+            method: "POST",
+            body: { diagnosis, severity }
+        });
+
+        alert("Saved!");
+        socket?.emit("doctor-updated");
+    } catch (err) {
+        alert("Failed to save.");
+    }
+}
+
+/* ============================================================
+   PATIENT VIEW
+   ============================================================ */
+async function renderPatientCases() {
+    const list = patientCasesList;
+    list.innerHTML = "<li class='case-card'>Loading...</li>";
+
+    try {
+        const data = await apiRequest(`/patient/cases/${currentUser.id}`);
+
+        if (!data.cases.length) {
+            list.innerHTML = "<li class='case-card'>No scheduled cases.</li>";
+            return;
+        }
+
+        list.innerHTML = "";
+
+        data.cases.forEach(c => {
+            const li = document.createElement("li");
+            li.className = "case-card";
+
+            li.innerHTML = `
+                <div class="case-top">
+                    <b>${c.scanType}</b>
+                    ${priorityBadge(c.priority)}
+                </div>
+                <div class="case-meta-line">Case: ${c._id}</div>
+                <div class="case-meta-line">Doctor: ${c.doctor?.name}</div>
+                <div class="case-meta-line">When: ${c.date} • ${c.timeSlot}</div>
+                <div class="case-meta-line">Diagnosis: ${c.diagnosis || "Not yet"}</div>
+            `;
+
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        list.innerHTML = "<li class='case-card'>Error loading cases</li>";
+    }
+}
+
+/* ============================================================
+   TECHNICIAN PANEL
+   ============================================================ */
+async function renderTechCases() {
+    const list = techCasesList;
+    list.innerHTML = "<li class='case-card'>Loading...</li>";
+
+    try {
+        const data = await apiRequest("/admin/cases"); // tech gets all cases
+
+        list.innerHTML = "";
+        data.cases.forEach(c => {
+            const li = document.createElement("li");
+            li.className = "case-card";
+
+            li.innerHTML = `
+                <div class="case-top">
+                    <b>${c._id}</b>
+                    <span class="badge badge-scan">${c.scanType}</span>
+                </div>
+
+                <div class="case-meta-line">Patient: ${c.patient?.name}</div>
+                <div class="case-meta-line">When: ${c.date} • ${c.timeSlot}</div>
+
+                <input type="file" multiple accept="image/*" id="upload_${c._id}">
+                <button class="small-btn" onclick="uploadImages('${c._id}')">Upload</button>
+            `;
+
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        list.innerHTML = "<li class='case-card'>Error loading technician cases</li>";
+    }
+}
+
+async function uploadImages(caseId) {
+    const input = document.getElementById(`upload_${caseId}`);
+    if (!input.files.length) return alert("Select images");
+
+    const fd = new FormData();
+    for (let f of input.files) fd.append("images", f);
+
+    try {
+        await apiRequest(`/tech/upload-cloud/${caseId}`, {
+            method: "POST",
+            body: fd
+        });
+
+        alert("Uploaded!");
+        socket?.emit("images-updated");
+    } catch (err) {
+        alert("Upload failed");
+    }
+}
+
+/* ============================================================
+   RADIOLOGIST PANEL
+   ============================================================ */
+async function renderRadioCases() {
+    const list = radioCasesList;
+    list.innerHTML = "<li class='case-card'>Loading...</li>";
+
+    try {
+        const data = await apiRequest("/admin/cases"); // radiologist sees all cases with images
+
+        list.innerHTML = "";
+
+        data.cases.forEach(c => {
+            const hasImages = c.images && c.images.length > 0;
+
+            const li = document.createElement("li");
+            li.className = "case-card";
+
+            li.innerHTML = `
+                <div class="case-top">
+                    <b>${c._id}</b>
+                    <span class="badge badge-scan">${c.scanType}</span>
+                    ${priorityBadge(c.priority)}
+                </div>
+
+                <div class="case-meta-line">Patient: ${c.patient?.name}</div>
+                <div class="case-meta-line">Doctor: ${c.doctor?.name}</div>
+
+                <div class="image-strip">
+                    ${
+                        hasImages
+                        ? c.images.map(url => `<img src="${url}" onclick="window.open('${url}')">`).join("")
+                        : "<span class='muted'>No images</span>"
+                    }
+                </div>
+
+                <textarea id="radioNote_${c._id}" class="input-inline">${c.radiologistNotes || ""}</textarea>
+
+                <button class="small-btn" onclick="saveRadioNotes('${c._id}')">Save Notes</button>
+                <button class="small-btn" onclick="runAI('${c._id}')">Run AI</button>
+            `;
+
+            list.appendChild(li);
+        });
+
+    } catch (err) {
+        list.innerHTML = "<li>Error loading cases</li>";
+    }
+}
+
+async function saveRadioNotes(caseId) {
+    const notes = document.getElementById(`radioNote_${caseId}`).value;
+
+    try {
+        await apiRequest(`/radio/notes/${caseId}`, {
+            method: "POST",
+            body: { radiologistNotes: notes }
+        });
+
+        alert("Saved!");
+        socket?.emit("radiologist-updated");
+    } catch (err) {
+        alert("Save failed");
+    }
+}
+
+async function runAI(caseId) {
+    try {
+        const data = await apiRequest(`/radio/ai-analyze/${caseId}`, {
+            method: "POST"
+        });
+
+        alert("AI Report Added!");
+        renderRadioCases();
+        socket?.emit("ai-report-generated");
+
+    } catch (err) {
+        alert("AI failed");
+    }
+}
+
+/* ============================================================
+   LIVE SOCKET UPDATES
+   ============================================================ */
 function setupSocket() {
-  if (!currentUser) return;
-
-  socket = io(API_BASE, {
-  transports: ["websocket"],
-  withCredentials: true,
-  extraHeaders: {
-    "Access-Control-Allow-Credentials": "true"
-  }
-});
-
-
-  socket.on("connect", () => {
-    console.log("Socket connected:", socket.id);
-
-    socket.emit("register", {
-      username: currentUser.username,
-      role: currentUser.role
+    socket = io(API_BASE, {
+        transports: ["websocket"],
+        withCredentials: true
     });
-  });
 
-  socket.on("case-created", () => {
-    if (currentRole === "doctor") renderDoctorCases();
-    if (currentRole === "patient") renderPatientCases();
-    if (currentRole === "technician") renderTechCases();
-  });
+    socket.on("connect", () => {
+        console.log("Socket connected");
+    });
 
-  socket.on("doctor-updated", () => {
-    if (currentRole === "technician") renderTechCases();
-    if (currentRole === "radiologist") renderRadioCases();
-  });
+    socket.on("case-created", () => {
+        if (currentRole === "doctor") renderDoctorCases();
+        if (currentRole === "patient") renderPatientCases();
+        if (currentRole === "technician") renderTechCases();
+    });
 
-  socket.on("images-updated", () => {
-    if (currentRole === "radiologist") renderRadioCases();
-    if (currentRole === "doctor") renderDoctorCases();
-  });
+    socket.on("doctor-updated", () => {
+        if (currentRole === "radiologist") renderRadioCases();
+    });
 
-  socket.on("radiologist-updated", () => {
-    if (currentRole === "doctor") renderDoctorCases();
-    if (currentRole === "patient") renderPatientCases();
-  });
+    socket.on("images-updated", () => {
+        if (currentRole === "radiologist") renderRadioCases();
+    });
 
-  socket.on("disconnect", () => {
-    console.warn("Socket disconnected.");
-  });
+    socket.on("radiologist-updated", () => {
+        if (currentRole === "doctor") renderDoctorCases();
+    });
+
+    socket.on("ai-report-generated", () => {
+        if (currentRole === "radiologist") renderRadioCases();
+    });
 }
+

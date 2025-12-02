@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Radiology Portal</title>
 
-  <!-- 🔥 SOCKET.IO CLIENT ADDED HERE -->
+  <!-- SOCKET.IO -->
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
   <style>
-    /* ========= Global Reset ========= */
+    /* --------------- GLOBAL --------------- */
     * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
     }
-
     body {
       min-height: 100vh;
       background: radial-gradient(circle at top, #1f2933 0, #050608 55%);
@@ -25,351 +22,75 @@
       color: #e5e7eb;
     }
 
-    /* ========= Login Card ========= */
+    /* Login Card */
     .auth-card {
       width: 380px;
       max-width: 95vw;
       background: #0b1015;
       border-radius: 14px;
       border: 1px solid rgba(148,163,184,0.5);
-      box-shadow:
-        0 24px 60px rgba(0,0,0,0.85),
-        0 0 0 1px rgba(15,23,42,0.8);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.85);
       padding: 22px 24px 20px;
     }
+    .auth-title { text-align:center;font-size:20px;font-weight:650;margin-bottom:4px; }
+    .auth-subtitle { text-align:center;font-size:12px;color:#9ca3af;margin-bottom:18px; }
 
-    .auth-title {
-      text-align: center;
-      font-size: 20px;
-      font-weight: 650;
-      margin-bottom: 4px;
-    }
-
-    .auth-subtitle {
-      text-align: center;
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 18px;
-    }
-
-    .role-toggle {
-      display: flex;
-      background: #020617;
-      border-radius: 999px;
-      padding: 2px;
-      border: 1px solid rgba(55,65,81,0.8);
-      margin-bottom: 18px;
-    }
-
-    .role-btn {
-      flex: 1;
-      padding: 7px 4px;
-      font-size: 12px;
-      border-radius: 999px;
-      border: none;
-      background: transparent;
-      color: #9ca3af;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .role-btn.active {
-      background: #111827;
-      color: #f9fafb;
-      font-weight: 600;
-    }
-
-    .field-label {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: #d1d5db;
-    }
+    .role-toggle { display:flex;background:#020617;border-radius:999px;padding:2px;border:1px solid #374151;margin-bottom:18px;}
+    .role-btn { flex:1;padding:7px;font-size:12px;border-radius:999px;border:none;background:transparent;color:#9ca3af;cursor:pointer; }
+    .role-btn.active { background:#111827;color:#fff;font-weight:600; }
 
     .auth-input {
-      width: 100%;
-      padding: 9px 10px;
-      font-size: 13px;
-      background: #020617;
-      border-radius: 8px;
-      border: 1px solid #1f2937;
-      color: #e5e7eb;
-      outline: none;
-      margin-bottom: 10px;
-      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    }
-
-    .auth-input:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 1px rgba(59,130,246,0.7);
-      background: #020617;
+      width:100%;padding:9px 10px;font-size:13px;background:#020617;
+      border-radius:8px;border:1px solid #1f2937;color:#e5e7eb;margin-bottom:10px;
     }
 
     .primary-btn {
-      width: 100%;
-      margin-top: 6px;
-      padding: 9px 10px;
-      font-size: 13px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      background: linear-gradient(90deg,#2563eb,#38bdf8);
-      color: #f9fafb;
-      font-weight: 600;
-      box-shadow: 0 10px 25px rgba(37,99,235,0.6);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      width:100%;margin-top:6px;padding:9px;font-size:13px;border-radius:8px;
+      background:linear-gradient(90deg,#2563eb,#38bdf8);color:white;font-weight:600;
+      border:none;cursor:pointer;
     }
 
-    .primary-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 35px rgba(37,99,235,0.85);
-    }
+    .error-text { color:#f97373;font-size:12px;display:none;margin-top:6px; }
 
-    .error-text {
-      font-size: 12px;
-      margin-top: 6px;
-      color: #f97373;
-      display: none;
-    }
-
-    /* ========= Dashboard Layout ========= */
+    /* Dashboard */
     .dashboard {
-      display: none;
-      width: min(1000px, 96vw);
-      background: #050a10;
-      border-radius: 12px;
-      border: 1px solid rgba(75,85,99,0.8);
-      box-shadow: 0 24px 70px rgba(0,0,0,0.9);
-      padding: 16px 18px 20px;
-      color: #e5e7eb;
-    }
-    .dash-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
+      display:none;width:min(1000px,96vw);background:#050a10;border-radius:12px;
+      border:1px solid #4b5563;box-shadow:0 24px 70px rgba(0,0,0,0.9);
+      padding:16px;color:#e5e7eb;
     }
 
-    .dash-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .dash-subtitle {
-      font-size: 12px;
-      color: #9ca3af;
-    }
-
-    .logout-btn {
-      padding: 6px 10px;
-      font-size: 11px;
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      background: transparent;
-      color: #e5e7eb;
-      cursor: pointer;
-    }
-
-    .tab-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 10px;
-      margin-top: 6px;
-    }
-
-    .tab-link {
-      border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 11px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      cursor: pointer;
-      color: #e5e7eb;
-    }
-
-    .tab-link.active {
-      background: #1d4ed8;
-      border-color: #1d4ed8;
-    }
+    .tab-bar { display:flex;gap:6px;margin:10px 0;flex-wrap:wrap; }
+    .tab-link { padding:5px 10px;border-radius:999px;font-size:11px;border:1px solid #4b5563;background:#020617;cursor:pointer; }
+    .tab-link.active { background:#1d4ed8;border-color:#1d4ed8; }
 
     .section {
-      display: none;
-      background: #020617;
-      border-radius: 10px;
-      border: 1px solid #111827;
-      padding: 10px 12px;
-      margin-top: 8px;
+      display:none;background:#020617;border-radius:10px;border:1px solid #111827;
+      padding:10px;margin-top:8px;
     }
 
-    .section-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #93c5fd;
-      margin-bottom: 6px;
-    }
+    .section-title { font-size:12px;color:#93c5fd;margin-bottom:6px; }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
-      gap: 8px 10px;
-    }
-
-    .form-grid .field-wrapper {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .textarea-small {
-      resize: vertical;
-      min-height: 50px;
-      max-height: 120px;
-      font-size: 12px;
-    }
-
-    .select-input {
-      appearance: none;
-    }
-
-    .success-text {
-      margin-top: 5px;
-      font-size: 11px;
-      color: #4ade80;
-      display: none;
-    }
-
-    /* ========= Lists / Cards ========= */
-    .case-list {
-      list-style: none;
-      margin-top: 4px;
-    }
-
-    .case-card {
-      border-radius: 8px;
-      background: #020617;
-      border: 1px solid #1f2937;
-      padding: 8px 9px;
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
-
-    .case-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1px 7px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-
-    .badge-critical {
-      background: rgba(248,113,113,0.1);
-      color: #fecaca;
-      border: 1px solid rgba(248,113,113,0.7);
-    }
-
-    .badge-medium {
-      background: rgba(251,191,36,0.1);
-      color: #facc15;
-      border: 1px solid rgba(251,191,36,0.7);
-    }
-
-    .badge-safe {
-      background: rgba(34,197,94,0.12);
-      color: #bbf7d0;
-      border: 1px solid rgba(34,197,94,0.7);
-    }
-
-    .badge-scan {
-      background: rgba(59,130,246,0.15);
-      color: #bfdbfe;
-      border: 1px solid rgba(59,130,246,0.6);
-    }
-
-    .small-btn {
-      border-radius: 999px;
-      border: 1px solid #4b5563;
-      background: transparent;
-      color: #e5e7eb;
-      font-size: 11px;
-      padding: 3px 8px;
-      cursor: pointer;
-      margin-top: 3px;
-    }
-
-    .input-inline {
-      width: 100%;
-      margin-top: 4px;
-      padding: 6px 7px;
-      font-size: 12px;
-      border-radius: 6px;
-      border: 1px solid #1f2937;
-      background: #020617;
-      color: #e5e7eb;
-    }
-
-    .case-meta-line {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
-    }
-
-    .label-inline {
-      font-weight: 600;
-      color: #d1d5db;
-    }
-
-    .notes-block {
-      margin-top: 4px;
-      font-size: 11px;
-    }
-
-    .muted {
-      color: #6b7280;
-      font-style: italic;
-    }
-
-    .image-strip {
-      margin-top: 4px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+    .case-list { list-style:none;margin-top:4px; }
+    .case-card { background:#020617;border:1px solid #1f2937;border-radius:8px;padding:8px;margin-bottom:8px;font-size:12px; }
 
     .image-strip img {
-      max-width: 120px;
-      max-height: 90px;
-      border-radius: 4px;
-      border: 1px solid #1f2937;
-      object-fit: cover;
-      cursor: pointer;
+      max-width:120px;max-height:90px;border-radius:4px;border:1px solid #1f2937;
     }
 
-    @media (max-width: 720px) {
-      .dashboard {
-        padding: 12px 10px 14px;
-      }
-    }
+    .small-btn { padding:4px 8px;font-size:11px;border-radius:999px;border:1px solid #4b5563;background:transparent;color:white;cursor:pointer;margin-top:4px; }
   </style>
 </head>
+
 <body>
 
-<!-- ============ LOGIN CARD ============ -->
+<!-- ----------------------------------------------------------- -->
+<!-- LOGIN CARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="auth-card" id="loginCard">
   <div class="auth-title">Radiology Portal</div>
-  <div class="auth-subtitle">Sign in to access your medical workflow</div>
+  <div class="auth-subtitle">Login to your workspace</div>
 
   <div class="role-toggle" id="roleToggle">
-    <!-- ORDER: admin, doctor, technician, radiologist, patient -->
     <button class="role-btn active" data-role="admin">Admin</button>
     <button class="role-btn" data-role="doctor">Doctor</button>
     <button class="role-btn" data-role="technician">Technician</button>
@@ -377,26 +98,19 @@
     <button class="role-btn" data-role="patient">Patient</button>
   </div>
 
-  <div class="field-wrapper">
-    <label class="field-label">Email / Username</label>
-    <input type="text" id="loginId" class="auth-input" placeholder="admin" />
-  </div>
-
-  <div class="field-wrapper">
-    <label class="field-label">Password</label>
-    <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••" />
-  </div>
+  <input id="loginId" class="auth-input" placeholder="username" />
+  <input id="loginPassword" class="auth-input" type="password" placeholder="password" />
 
   <button class="primary-btn" id="loginBtn">Sign in</button>
   <div class="error-text" id="loginError">Invalid credentials</div>
 </div>
-<!-- ============ ADMIN DASHBOARD ============ -->
+
+<!-- ----------------------------------------------------------- -->
+<!-- ADMIN DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="dashboard" id="adminDashboard">
   <div class="dash-header">
-    <div>
-      <div class="dash-title">Admin Console</div>
-      <div class="dash-subtitle">Manage doctors, technicians, patients & scheduling</div>
-    </div>
+    <div><div class="dash-title">Admin Console</div></div>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 
@@ -411,245 +125,139 @@
   <!-- Add Doctor -->
   <div class="section" id="adminAddDoctor">
     <div class="section-title">Add Doctor</div>
-    <div class="form-grid">
-      <div class="field-wrapper">
-        <label class="field-label">Name</label>
-        <input id="docName" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Email</label>
-        <input id="docEmail" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Username</label>
-        <input id="docUser" class="auth-input" />
-      </div>
-    </div>
-    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
-      Doctor password is fixed as <b>doctor</b>.
-    </div>
-    <button class="primary-btn" style="margin-top:10px;" onclick="addDoctor()">Save Doctor</button>
-    <div class="success-text" id="docSuccess">Doctor saved.</div>
+    <input id="docName" class="auth-input" placeholder="Name" />
+    <input id="docEmail" class="auth-input" placeholder="Email" />
+    <input id="docUser" class="auth-input" placeholder="Username" />
+    <button class="primary-btn" onclick="addDoctor()">Save</button>
+    <div class="success-text" id="docSuccess">Doctor added.</div>
   </div>
 
   <!-- Add Technician -->
   <div class="section" id="adminAddTech">
     <div class="section-title">Add Technician</div>
-    <div class="form-grid">
-      <div class="field-wrapper">
-        <label class="field-label">Name</label>
-        <input id="techName" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Email</label>
-        <input id="techEmail" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Username</label>
-        <input id="techUser" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Password</label>
-        <input id="techPass" class="auth-input" />
-      </div>
-    </div>
-    <button class="primary-btn" style="margin-top:10px;" onclick="addTechnician()">Save Technician</button>
-    <div class="success-text" id="techSuccess">Technician saved.</div>
+    <input id="techName" class="auth-input" placeholder="Name" />
+    <input id="techEmail" class="auth-input" placeholder="Email" />
+    <input id="techUser" class="auth-input" placeholder="Username" />
+    <input id="techPass" class="auth-input" placeholder="Password" />
+    <button class="primary-btn" onclick="addTechnician()">Save</button>
+    <div class="success-text" id="techSuccess">Technician added.</div>
   </div>
 
   <!-- Add Patient -->
   <div class="section" id="adminAddPatient">
     <div class="section-title">Add Patient</div>
-    <div class="form-grid">
-      <div class="field-wrapper">
-        <label class="field-label">Name</label>
-        <input id="patName" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Email</label>
-        <input id="patEmail" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Username</label>
-        <input id="patUser" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Password</label>
-        <input id="patPass" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Condition / Initial Priority</label>
-        <select id="patPriority" class="auth-input select-input">
-          <option value="Critical">Critical</option>
-          <option value="Medium">Medium</option>
-          <option value="Safe">Safe</option>
-        </select>
-      </div>
-    </div>
-    <button class="primary-btn" style="margin-top:10px;" onclick="addPatient()">Save Patient</button>
-    <div class="success-text" id="patSuccess">Patient saved.</div>
+    <input id="patName" class="auth-input" placeholder="Name" />
+    <input id="patEmail" class="auth-input" placeholder="Email" />
+    <input id="patUser" class="auth-input" placeholder="Username" />
+    <input id="patPass" class="auth-input" placeholder="Password" />
+    <select id="patPriority" class="auth-input">
+      <option value="Critical">Critical</option>
+      <option value="Medium">Medium</option>
+      <option value="Safe">Safe</option>
+    </select>
+    <button class="primary-btn" onclick="addPatient()">Save</button>
+    <div class="success-text" id="patSuccess">Patient added.</div>
   </div>
 
   <!-- Schedule Case -->
   <div class="section" id="adminSchedule">
-    <div class="section-title">Schedule New Case</div>
-    <div class="form-grid">
-      <div class="field-wrapper">
-        <label class="field-label">Patient</label>
-        <select id="casePatient" class="auth-input select-input"></select>
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Doctor</label>
-        <select id="caseDoctor" class="auth-input select-input"></select>
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Date</label>
-        <input type="date" id="caseDate" class="auth-input" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Time Slot</label>
-        <select id="caseSlot" class="auth-input select-input">
-          <option value="09:00-10:00">09:00-10:00</option>
-          <option value="10:00-11:00">10:00-11:00</option>
-          <option value="11:00-12:00">11:00-12:00</option>
-          <option value="14:00-15:00">14:00-15:00</option>
-          <option value="15:00-16:00">15:00-16:00</option>
-        </select>
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Scan Type</label>
-        <select id="caseScanType" class="auth-input select-input">
-          <option value="CT">CT Scan</option>
-          <option value="MRI">MRI</option>
-          <option value="X-Ray">X-Ray</option>
-          <option value="Ultrasound">Ultrasound</option>
-        </select>
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Priority</label>
-        <select id="casePriority" class="auth-input select-input">
-          <option value="Critical">Critical</option>
-          <option value="Medium">Medium</option>
-          <option value="Safe">Safe</option>
-        </select>
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Referring Doctor</label>
-        <input id="caseRefDoc" class="auth-input" placeholder="OP / External doctor name" />
-      </div>
-      <div class="field-wrapper">
-        <label class="field-label">Notes / Symptoms</label>
-        <textarea id="caseSymptoms" class="auth-input textarea-small"></textarea>
-      </div>
-    </div>
-    <button class="primary-btn" style="margin-top:10px;" onclick="scheduleCase()">Schedule</button>
-    <div class="success-text" id="caseSuccess">Case scheduled.</div>
+    <div class="section-title">Schedule Case</div>
+    <select id="casePatient" class="auth-input"></select>
+    <select id="caseDoctor" class="auth-input"></select>
+    <input type="date" id="caseDate" class="auth-input" />
+    <select id="caseSlot" class="auth-input">
+      <option>09:00-10:00</option>
+      <option>10:00-11:00</option>
+      <option>11:00-12:00</option>
+      <option>14:00-15:00</option>
+      <option>15:00-16:00</option>
+    </select>
+    <select id="caseScanType" class="auth-input">
+      <option>CT</option><option>MRI</option><option>X-Ray</option><option>Ultrasound</option>
+    </select>
+    <select id="casePriority" class="auth-input">
+      <option>Critical</option><option>Medium</option><option>Safe</option>
+    </select>
+    <input id="caseRefDoc" class="auth-input" placeholder="Referring Doctor" />
+    <textarea id="caseSymptoms" class="auth-input"></textarea>
+
+    <button class="primary-btn" onclick="scheduleCase()">Schedule</button>
+    <div class="success-text" id="caseSuccess">Scheduled.</div>
   </div>
 
   <!-- All Cases -->
   <div class="section" id="adminCases">
     <div class="section-title">All Cases</div>
-    <ul class="case-list" id="adminCasesList"></ul>
+    <ul id="adminCasesList" class="case-list"></ul>
   </div>
 </div>
 
+<!-- ----------------------------------------------------------- -->
 <!-- DOCTOR DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="dashboard" id="doctorDashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">Doctor Workspace</div>
-      <div class="dash-subtitle">See your cases, add notes & prescriptions</div>
-    </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-
+  <button class="logout-btn" onclick="logout()">Logout</button>
   <div class="section" style="display:block;">
     <div class="section-title">Assigned Cases</div>
-    <ul class="case-list" id="doctorCasesList"></ul>
+    <ul id="doctorCasesList" class="case-list"></ul>
   </div>
 </div>
 
+<!-- ----------------------------------------------------------- -->
 <!-- PATIENT DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="dashboard" id="patientDashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">Patient Portal</div>
-      <div class="dash-subtitle">Your scheduled scans & prescriptions</div>
-    </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-
+  <button class="logout-btn" onclick="logout()">Logout</button>
   <div class="section" style="display:block;">
     <div class="section-title">My Cases</div>
-    <ul class="case-list" id="patientCasesList"></ul>
+    <ul id="patientCasesList" class="case-list"></ul>
   </div>
 </div>
 
-<!-- TECH DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
+<!-- TECHNICIAN DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="dashboard" id="techDashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">Technician Panel</div>
-      <div class="dash-subtitle">Attach scan images to scheduled cases</div>
-    </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-
+  <button class="logout-btn" onclick="logout()">Logout</button>
   <div class="section" style="display:block;">
-    <div class="section-title">Cases to Upload</div>
-    <ul class="case-list" id="techCasesList"></ul>
+    <div class="section-title">Upload Images</div>
+    <ul id="techCasesList" class="case-list"></ul>
   </div>
 </div>
 
-<!-- RADIO DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
+<!-- RADIOLOGIST DASHBOARD -->
+<!-- ----------------------------------------------------------- -->
 <div class="dashboard" id="radioDashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">Radiologist Queue</div>
-      <div class="dash-subtitle">View images & details for reporting</div>
-    </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-
+  <button class="logout-btn" onclick="logout()">Logout</button>
   <div class="section" style="display:block;">
-    <div class="section-title">Cases with Images</div>
-    <ul class="case-list" id="radioCasesList"></ul>
+    <div class="section-title">Cases With Images</div>
+    <ul id="radioCasesList" class="case-list"></ul>
   </div>
 </div>
 
-<!-- Main JS -->
-<script src="script.js"></script>
-
-<!-- 🔥 REALTIME SOCKET.IO LISTENERS ADDED -->
+<!-- ----------------------------------------------------------- -->
+<!-- MAIN APP SCRIPT -->
+<!-- ----------------------------------------------------------- -->
 <script>
-    const API_BASE = "http://YOUR_IP_HERE:5000"; // change later
+  const API_BASE = "https://radiology-backend-vvor.onrender.com";
 
-    const socket = io(API_BASE);
+  const socket = io(API_BASE, { transports: ["websocket"] });
 
-    socket.on("doctor-updated", () => {
-        loadAdminLists?.();
-    });
+  socket.on("case-updated", () => {
+    loadAdminCases?.();
+    loadDoctorCases?.();
+    loadPatientCases?.();
+    loadRadioCases?.();
+  });
 
-    socket.on("patient-updated", () => {
-        loadAdminLists?.();
-    });
-
-    socket.on("tech-updated", () => {
-        loadAdminLists?.();
-    });
-
-    socket.on("case-updated", () => {
-        loadAdminCases?.();
-        loadDoctorCases?.();
-        loadPatientCases?.();
-        loadRadioCases?.();
-    });
-
-    socket.on("images-updated", () => {
-        loadTechCases?.();
-        loadRadioCases?.();
-    });
+  socket.on("images-updated", () => {
+    loadTechCases?.();
+    loadRadioCases?.();
+  });
 </script>
+
+<script src="script.js"></script>
 
 </body>
 </html>
