@@ -237,6 +237,31 @@ async function addTechnician() {
         alert(err.message);
     }
 }
+/* ---- ADD RADIOLOGIST ---- */
+async function addRadiologist() {
+    const name = radioName.value.trim();
+    const email = radioEmail.value.trim();
+    const username = radioUser.value.trim();
+    const password = radioPass.value.trim();
+
+    if (!name || !email || !username || !password) return;
+
+    try {
+        await apiRequest("/admin/radiologist", {
+            method: "POST",
+            body: { name, email, username, password }
+        });
+
+        radioSuccess.style.display = "block";
+        setTimeout(() => radioSuccess.style.display = "none", 1500);
+
+        radioName.value = radioEmail.value = radioUser.value = radioPass.value = "";
+        socket?.emit("admin-updated");
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
 
 /* ---- ADD PATIENT ---- */
 async function addPatient() {
