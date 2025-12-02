@@ -237,12 +237,12 @@
 </div>
 
 <!-- ----------------------------------------------------------- -->
-<!-- MAIN APP SCRIPT -->
+<!-- SOCKET HANDLER (minimal) -->
 <!-- ----------------------------------------------------------- -->
 <script>
   const API_BASE = "https://radiology-backend-vvor.onrender.com";
 
-  const socket = io(API_BASE, { transports: ["websocket"] });
+  const socket = io(API_BASE, { transports: ["websocket"], withCredentials: true });
 
   socket.on("case-updated", () => {
     loadAdminCases?.();
@@ -257,6 +257,7 @@
   });
 </script>
 
+<!-- MAIN APP LOGIC -->
 <script src="script.js"></script>
 
 </body>
