@@ -1,5 +1,5 @@
 /* ============================================================
-   FRONTEND SCRIPT.JS — CLEANED & FIXED
+   FRONTEND SCRIPT.JS — COMPLETE (TECH UPLOAD + RADIO AI)
 ============================================================ */
 
 const API_BASE = "https://radiology-backend-vvor.onrender.com";
@@ -37,12 +37,17 @@ async function apiRequest(path, options = {}) {
     const finalOptions = {
         method: options.method || "GET",
         headers: options.headers || {},
-        credentials: "include",
+        credentials: "include", // Essential for session cookies
     };
 
+    // If body is NOT FormData (i.e., JSON), set headers and stringify
     if (options.body && !(options.body instanceof FormData)) {
         finalOptions.headers["Content-Type"] = "application/json";
         finalOptions.body = JSON.stringify(options.body);
+    } 
+    // If body IS FormData, let browser set Content-Type automatically (multipart/form-data)
+    else if (options.body instanceof FormData) {
+        finalOptions.body = options.body;
     }
 
     try {
@@ -195,9 +200,9 @@ function loadRoleDashboard() {
     } else if (currentRole === "doctor") {
         renderDoctorCases();
     } else if (currentRole === "technician") {
-        renderTechCases();
+        renderTechCases(); 
     } else if (currentRole === "radiologist") {
-        renderRadioCases();
+        renderRadioCases(); // <--- This now works with AI
     } else if (currentRole === "patient") {
         renderPatientCases();
     }
@@ -346,30 +351,234 @@ function priorityBadge(p) {
 }
 
 /* ============================================================
-   OTHER ROLES (PLACEHOLDERS)
-   These functions were missing in your original code, causing crashes.
+   TECHNICIAN FUNCTIONS (UPLOAD LOGIC)
+   Fully implemented to work with server routes
+============================================================ */
+
+async function renderTechCases() {
+    const list = document.getElementById("techCasesList");
+    if (!list) return;
+
+    list.innerHTML = "<div class='loading-spinner'>Loading pending scans...</div>";
+
+    try {
+        const data = await apiRequest("/technician/cases"); 
+        const cases = data.cases || [];
+
+        if (cases.length === 0) {
+            list.innerHTML = "<div class='case-card'>No cases found assigned or pending.</div>";
+            return;
+        }
+
+        list.innerHTML = ""; // Clear loading message
+
+        cases.forEach(c => {
+            const card = document.createElement("div");
+            card.className = "case-card";
+            
+            // Check if images array has items
+            const isCompleted = c.images && c.images.length > 0;
+
+            card.innerHTML = `
+                <div class="case-top">
+                    <b>ID: ${c._id.substring(0, 8)}...</b>
+                    <span class="badge badge-scan">${c.scanType || 'General'}</span>
+                    ${isCompleted 
+                        ? `<span class="badge" style="background:#d1fae5; color:#065f46">Scanned</span>` 
+                        : `<span class="badge" style="background:#fee2e2; color:#991b1b">Pending</span>`
+                    }
+                </div>
+
+                <div class="case-details" style="margin: 10px 0; font-size: 0.9rem; color: #555;">
+                    <p><strong>Patient:</strong> ${c.patient?.name || "Unknown"}</p>
+                    <p><strong>Doctor:</strong> ${c.doctor?.name || "Unknown"}</p>
+                    <p><strong>Symptoms:</strong> ${c.symptoms || "N/A"}</p>
+                </div>
+
+                <div class="upload-section" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                    ${isCompleted 
+                        ? `<p style="color:green; font-size:0.9rem;"><i class="fa-solid fa-check"></i> Images Uploaded</p>` 
+                        : `
+                        <label style="display:block; margin-bottom:5px; font-size:0.85rem;">Upload Scan Image:</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="file" id="file-${c._id}" class="inp" style="padding: 5px; flex-grow:1;">
+                            <button class="btn-primary" onclick="uploadScan('${c._id}')">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+                            </button>
+                        </div>
+                        `
+                    }
+                </div>
+            `;
+            list.appendChild(card);
+        });
+
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = `<div class='case-card' style='color:red'>Error: ${err.message}</div>`;
+    }
+}
+
+async function uploadScan(caseId) {
+    const fileInput = document.getElementById(`file-${caseId}`);
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select a file first.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("images", file); 
+
+    const btn = fileInput.nextElementSibling;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Uploading...`;
+    btn.disabled = true;
+
+    try {
+        await apiRequest(`/tech/upload-cloud/${caseId}`, {
+            method: "POST",
+            body: formData
+        });
+
+        alert("Scan uploaded successfully!");
+        renderTechCases(); 
+        
+        if(socket) socket.emit("images-updated", { caseId });
+
+    } catch (err) {
+        alert("Upload Failed: " + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+
+/* ============================================================
+   RADIOLOGIST FUNCTIONS (AI LOGIC)
+   Displays image + "Generate AI Report" button
+============================================================ */
+
+async function renderRadioCases() {
+    const list = document.getElementById("radioCasesList");
+    if (!list) return;
+
+    list.innerHTML = "<div class='loading-spinner'>Loading cases for analysis...</div>";
+
+    try {
+        // Fetch all cases (Using admin endpoint to see everything)
+        // In a real app, you might have /radio/cases
+        const data = await apiRequest("/admin/cases");
+        const cases = data.cases || [];
+
+        list.innerHTML = "";
+
+        // Filter only cases that have images uploaded by tech
+        const readyCases = cases.filter(c => c.images && c.images.length > 0);
+
+        if (readyCases.length === 0) {
+            list.innerHTML = "<div class='case-card'>No scanned cases waiting for analysis.</div>";
+            return;
+        }
+
+        readyCases.forEach(c => {
+            const card = document.createElement("div");
+            card.className = "case-card";
+
+            // Check if AI report already exists in notes
+            const hasReport = c.radiologistNotes && c.radiologistNotes.includes("AI ANALYSIS REPORT");
+            const imageUrl = c.images[0]; // Display first image
+
+            card.innerHTML = `
+                <div class="case-top">
+                    <b>ID: ${c._id.substring(0, 8)}</b>
+                    <span class="badge badge-scan">${c.scanType}</span>
+                    ${hasReport 
+                        ? `<span class="badge" style="background:#d1fae5; color:#065f46">Report Ready</span>`
+                        : `<span class="badge" style="background:#fff7ed; color:#c2410c">Needs Analysis</span>`
+                    }
+                </div>
+
+                <div class="split-view" style="display:flex; flex-wrap: wrap; gap:15px; margin-top:15px;">
+                    <!-- LEFT: THE SCAN IMAGE -->
+                    <div style="flex:1; min-width: 200px;">
+                        <small style="color:#666; display:block; margin-bottom:5px;">Uploaded Scan:</small>
+                        <a href="${imageUrl}" target="_blank">
+                            <img src="${imageUrl}" style="width:100%; height:150px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">
+                        </a>
+                    </div>
+
+                    <!-- RIGHT: AI ACTIONS / REPORT -->
+                    <div style="flex:2; min-width: 200px;">
+                        ${hasReport 
+                            ? `<div class="ai-result-box" style="background:#f8f9fa; padding:10px; border-radius:6px; font-size:0.85rem; max-height:150px; overflow-y:auto; border-left: 3px solid #6366f1;">
+                                <strong><i class="fa-solid fa-robot"></i> AI Findings:</strong><br>
+                                ${c.radiologistNotes.replace(/\n/g, '<br>')}
+                               </div>`
+                            : `<div style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:start;">
+                                <p style="font-size:0.9rem; color:#555; margin-bottom:10px;">
+                                    Scan is ready. Run AI analysis to detect anomalies.
+                                </p>
+                                <button class="btn-primary" id="btn-ai-${c._id}" onclick="generateAIReport('${c._id}')">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI Report
+                                </button>
+                               </div>`
+                        }
+                    </div>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+
+    } catch (err) {
+        list.innerHTML = `<div class='case-card'>Error: ${err.message}</div>`;
+    }
+}
+
+async function generateAIReport(caseId) {
+    const btn = document.getElementById(`btn-ai-${caseId}`);
+    const originalText = btn.innerHTML;
+    
+    // 1. UI Loading State
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...`;
+    btn.disabled = true;
+
+    try {
+        // 2. Call Server Endpoint
+        const data = await apiRequest(`/radio/ai-analyze/${caseId}`, { method: "POST" });
+
+        if (data.success) {
+            // 3. Refresh View to show the new report
+            await renderRadioCases();
+            
+            // Notify other users
+            if(socket) socket.emit("ai-report-generated", { caseId });
+        } else {
+            throw new Error(data.message);
+        }
+
+    } catch (err) {
+        alert("AI Analysis Failed: " + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+/* ============================================================
+   OTHER ROLES
 ============================================================ */
 async function renderDoctorCases() {
     const list = document.getElementById("doctorCasesList");
+    if(!list) return;
     list.innerHTML = "Fetching doctor cases...";
-    try {
-        // Example endpoint, ensure your backend has this or change to /admin/cases
-        // const data = await apiRequest("/doctor/cases"); 
-        // renderListGeneric(list, data.cases);
-        list.innerHTML = "Doctor cases loaded (Connect backend endpoint)";
-    } catch(e) { list.innerHTML = "No cases or error."; }
+    // Placeholder - connect to specific doctor endpoint if needed
+    // const data = await apiRequest("/doctor/cases/ME");
+    list.innerHTML = "<div class='case-card'>Doctor Dashboard Loaded (Connect endpoint to see specific cases)</div>";
 }
 
 async function renderPatientCases() {
-    document.getElementById("patientCasesList").innerHTML = "Patient records loaded.";
-}
-
-async function renderTechCases() {
-    document.getElementById("techCasesList").innerHTML = "Ready for uploads.";
-}
-
-async function renderRadioCases() {
-    document.getElementById("radioCasesList").innerHTML = "Waiting for scans to analyze.";
+    document.getElementById("patientCasesList").innerHTML = "<div class='case-card'>Patient records loaded.</div>";
 }
 
 /* ============================================================
@@ -381,13 +590,20 @@ function setupSocket() {
         
         socket.on("connect", () => console.log("Socket Connected"));
         
+        // Listen for events
         socket.on("case-created", () => {
             if(currentRole === "admin") renderAdminCases();
-            // trigger other refreshes if needed
+            if(currentRole === "technician") renderTechCases(); 
         });
         
-        socket.on("admin-updated", () => {
-            if(currentRole === "admin") refreshAdminDropdowns();
+        socket.on("images-updated", () => {
+             if(currentRole === "technician") renderTechCases(); 
+             if(currentRole === "radiologist") renderRadioCases(); // Radiologist sees new scan instantly
+        });
+
+        socket.on("ai-report-generated", () => {
+             if(currentRole === "radiologist") renderRadioCases(); // Update view to show report
+             if(currentRole === "doctor") renderDoctorCases();
         });
 
     } catch(e) {
