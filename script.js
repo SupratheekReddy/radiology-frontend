@@ -1,5 +1,5 @@
 /* ============================================================
-   FRONTEND SCRIPT.JS — COMPLETE (TECH UPLOAD + RADIO AI)
+   FRONTEND SCRIPT.JS — FIXED (Scheduling Validation Errors)
 ============================================================ */
 
 const API_BASE = "https://radiology-backend-vvor.onrender.com";
@@ -37,15 +37,13 @@ async function apiRequest(path, options = {}) {
     const finalOptions = {
         method: options.method || "GET",
         headers: options.headers || {},
-        credentials: "include", // Essential for session cookies
+        credentials: "include", 
     };
 
-    // If body is NOT FormData (i.e., JSON), set headers and stringify
     if (options.body && !(options.body instanceof FormData)) {
         finalOptions.headers["Content-Type"] = "application/json";
         finalOptions.body = JSON.stringify(options.body);
     } 
-    // If body IS FormData, let browser set Content-Type automatically (multipart/form-data)
     else if (options.body instanceof FormData) {
         finalOptions.body = options.body;
     }
@@ -76,15 +74,12 @@ if (roleToggle) {
         const btn = e.target.closest(".role-card");
         if (!btn) return;
 
-        // UI Updates
         document.querySelectorAll(".role-card").forEach(x => x.classList.remove("active"));
         btn.classList.add("active");
         loginError.style.display = "none";
 
-        // Logic Updates
         currentRole = btn.dataset.role;
         
-        // Placeholder Updates
         switch (currentRole) {
             case "admin": loginId.placeholder = "admin"; break;
             case "doctor": loginId.placeholder = "doctor@example.com"; break;
@@ -122,19 +117,15 @@ async function handleLogin() {
             return;
         }
 
-        // Success
         currentUser = data.user;
         currentRole = data.user.role;
 
-        // Switch View
         document.getElementById("loginPage").style.display = "none";
         document.getElementById("appLayout").style.display = "flex";
 
-        // Update Sidebar User Info
         document.getElementById("displayUsername").textContent = currentUser.username;
         document.getElementById("displayRole").textContent = currentRole;
 
-        // Setup Dashboard
         buildSidebarForRole();
         loadRoleDashboard();
         setupSocket();
@@ -175,7 +166,6 @@ function buildSidebarForRole() {
         return btn;
     };
 
-    // Define items per role
     if (currentRole === "admin") {
         nav.appendChild(createNavItem("Dashboard", "adminSections"));
     } else if (currentRole === "doctor") {
@@ -188,12 +178,10 @@ function buildSidebarForRole() {
         nav.appendChild(createNavItem("My Reports", "patientCasesView"));
     }
     
-    // Auto-click first item
     if(nav.firstChild) nav.firstChild.click();
 }
 
 function loadRoleDashboard() {
-    // Initial data fetch based on role
     if (currentRole === "admin") {
         refreshAdminDropdowns();
         renderAdminCases();
@@ -202,7 +190,7 @@ function loadRoleDashboard() {
     } else if (currentRole === "technician") {
         renderTechCases(); 
     } else if (currentRole === "radiologist") {
-        renderRadioCases(); // <--- This now works with AI
+        renderRadioCases();
     } else if (currentRole === "patient") {
         renderPatientCases();
     }
@@ -270,6 +258,7 @@ function alertAndReset(successId, inputIds) {
 
 /* ============================================================
    ADMIN: SCHEDULING & LISTS
+   FIXED: Now includes usernames in dataset and sends caseId
 ============================================================ */
 async function refreshAdminDropdowns() {
     try {
@@ -280,6 +269,8 @@ async function refreshAdminDropdowns() {
             list.forEach(item => {
                 const opt = document.createElement("option");
                 opt.value = item._id;
+                // Store username in data attribute for scheduling
+                opt.dataset.username = item.username; 
                 opt.textContent = `${item.name} (${item.username})`;
                 el.appendChild(opt);
             });
@@ -290,10 +281,24 @@ async function refreshAdminDropdowns() {
 }
 
 async function scheduleCase() {
+    // 1. Get Dropdown Elements
+    const patSelect = document.getElementById('casePatient');
+    const docSelect = document.getElementById('caseDoctor');
+
+    // 2. Extract Usernames from the selected options (Required by Backend)
+    const patientUsername = patSelect.options[patSelect.selectedIndex]?.dataset.username || "";
+    const doctorUsername = docSelect.options[docSelect.selectedIndex]?.dataset.username || "";
+
+    // 3. Generate a random Case ID (Required by Backend)
+    const generatedCaseId = "CASE-" + Math.floor(100000 + Math.random() * 900000);
+
     try {
         await apiRequest("/admin/case", {
             method: "POST",
             body: {
+                caseId: generatedCaseId,        // <-- FIXED
+                patientUsername: patientUsername, // <-- FIXED
+                doctorUsername: doctorUsername,   // <-- FIXED
                 patient: getVal('casePatient'),
                 doctor: getVal('caseDoctor'),
                 date: getVal('caseDate'),
@@ -306,7 +311,10 @@ async function scheduleCase() {
         });
         alertAndReset("caseSuccess", ['caseRefDoc', 'caseSymptoms']);
         renderAdminCases();
-    } catch(e) { alert(e.message); }
+    } catch(e) { 
+        console.error(e);
+        alert(e.message); 
+    }
 }
 
 async function renderAdminCases() {
@@ -328,14 +336,17 @@ function renderListGeneric(container, cases) {
     cases.forEach(c => {
         const card = document.createElement("div");
         card.className = "case-card";
+        // Use caseId if available, otherwise display ID
+        const displayId = c.caseId || c._id.substring(0,8);
+        
         card.innerHTML = `
             <div class="case-top">
-                <b>${c._id.substring(0,8)}...</b>
+                <b>${displayId}</b>
                 <span class="badge badge-scan">${c.scanType || 'Scan'}</span>
                 ${priorityBadge(c.priority)}
             </div>
-            <div class="case-meta-line">Patient: ${c.patient?.name || "-"}</div>
-            <div class="case-meta-line">Doctor: ${c.doctor?.name || "-"}</div>
+            <div class="case-meta-line">Patient: ${c.patient?.name || c.patientUsername || "-"}</div>
+            <div class="case-meta-line">Doctor: ${c.doctor?.name || c.doctorUsername || "-"}</div>
             <div class="case-meta-line">Date: ${c.date || "?"} | ${c.timeSlot || "?"}</div>
         `;
         container.appendChild(card);
@@ -351,8 +362,7 @@ function priorityBadge(p) {
 }
 
 /* ============================================================
-   TECHNICIAN FUNCTIONS (UPLOAD LOGIC)
-   Fully implemented to work with server routes
+   TECHNICIAN FUNCTIONS
 ============================================================ */
 
 async function renderTechCases() {
@@ -370,18 +380,18 @@ async function renderTechCases() {
             return;
         }
 
-        list.innerHTML = ""; // Clear loading message
+        list.innerHTML = ""; 
 
         cases.forEach(c => {
             const card = document.createElement("div");
             card.className = "case-card";
             
-            // Check if images array has items
             const isCompleted = c.images && c.images.length > 0;
+            const displayId = c.caseId || c._id.substring(0,8);
 
             card.innerHTML = `
                 <div class="case-top">
-                    <b>ID: ${c._id.substring(0, 8)}...</b>
+                    <b>ID: ${displayId}</b>
                     <span class="badge badge-scan">${c.scanType || 'General'}</span>
                     ${isCompleted 
                         ? `<span class="badge" style="background:#d1fae5; color:#065f46">Scanned</span>` 
@@ -390,8 +400,8 @@ async function renderTechCases() {
                 </div>
 
                 <div class="case-details" style="margin: 10px 0; font-size: 0.9rem; color: #555;">
-                    <p><strong>Patient:</strong> ${c.patient?.name || "Unknown"}</p>
-                    <p><strong>Doctor:</strong> ${c.doctor?.name || "Unknown"}</p>
+                    <p><strong>Patient:</strong> ${c.patient?.name || c.patientUsername || "Unknown"}</p>
+                    <p><strong>Doctor:</strong> ${c.doctor?.name || c.doctorUsername || "Unknown"}</p>
                     <p><strong>Symptoms:</strong> ${c.symptoms || "N/A"}</p>
                 </div>
 
@@ -414,7 +424,6 @@ async function renderTechCases() {
         });
 
     } catch (err) {
-        console.error(err);
         list.innerHTML = `<div class='case-card' style='color:red'>Error: ${err.message}</div>`;
     }
 }
@@ -457,7 +466,6 @@ async function uploadScan(caseId) {
 
 /* ============================================================
    RADIOLOGIST FUNCTIONS (AI LOGIC)
-   Displays image + "Generate AI Report" button
 ============================================================ */
 
 async function renderRadioCases() {
@@ -467,14 +475,10 @@ async function renderRadioCases() {
     list.innerHTML = "<div class='loading-spinner'>Loading cases for analysis...</div>";
 
     try {
-        // Fetch all cases (Using admin endpoint to see everything)
-        // In a real app, you might have /radio/cases
         const data = await apiRequest("/admin/cases");
         const cases = data.cases || [];
 
         list.innerHTML = "";
-
-        // Filter only cases that have images uploaded by tech
         const readyCases = cases.filter(c => c.images && c.images.length > 0);
 
         if (readyCases.length === 0) {
@@ -486,13 +490,13 @@ async function renderRadioCases() {
             const card = document.createElement("div");
             card.className = "case-card";
 
-            // Check if AI report already exists in notes
             const hasReport = c.radiologistNotes && c.radiologistNotes.includes("AI ANALYSIS REPORT");
-            const imageUrl = c.images[0]; // Display first image
+            const imageUrl = c.images[0]; 
+            const displayId = c.caseId || c._id.substring(0,8);
 
             card.innerHTML = `
                 <div class="case-top">
-                    <b>ID: ${c._id.substring(0, 8)}</b>
+                    <b>ID: ${displayId}</b>
                     <span class="badge badge-scan">${c.scanType}</span>
                     ${hasReport 
                         ? `<span class="badge" style="background:#d1fae5; color:#065f46">Report Ready</span>`
@@ -501,7 +505,6 @@ async function renderRadioCases() {
                 </div>
 
                 <div class="split-view" style="display:flex; flex-wrap: wrap; gap:15px; margin-top:15px;">
-                    <!-- LEFT: THE SCAN IMAGE -->
                     <div style="flex:1; min-width: 200px;">
                         <small style="color:#666; display:block; margin-bottom:5px;">Uploaded Scan:</small>
                         <a href="${imageUrl}" target="_blank">
@@ -509,7 +512,6 @@ async function renderRadioCases() {
                         </a>
                     </div>
 
-                    <!-- RIGHT: AI ACTIONS / REPORT -->
                     <div style="flex:2; min-width: 200px;">
                         ${hasReport 
                             ? `<div class="ai-result-box" style="background:#f8f9fa; padding:10px; border-radius:6px; font-size:0.85rem; max-height:150px; overflow-y:auto; border-left: 3px solid #6366f1;">
@@ -540,19 +542,14 @@ async function generateAIReport(caseId) {
     const btn = document.getElementById(`btn-ai-${caseId}`);
     const originalText = btn.innerHTML;
     
-    // 1. UI Loading State
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing...`;
     btn.disabled = true;
 
     try {
-        // 2. Call Server Endpoint
         const data = await apiRequest(`/radio/ai-analyze/${caseId}`, { method: "POST" });
 
         if (data.success) {
-            // 3. Refresh View to show the new report
             await renderRadioCases();
-            
-            // Notify other users
             if(socket) socket.emit("ai-report-generated", { caseId });
         } else {
             throw new Error(data.message);
@@ -573,7 +570,6 @@ async function renderDoctorCases() {
     if(!list) return;
     list.innerHTML = "Fetching doctor cases...";
     // Placeholder - connect to specific doctor endpoint if needed
-    // const data = await apiRequest("/doctor/cases/ME");
     list.innerHTML = "<div class='case-card'>Doctor Dashboard Loaded (Connect endpoint to see specific cases)</div>";
 }
 
@@ -590,7 +586,6 @@ function setupSocket() {
         
         socket.on("connect", () => console.log("Socket Connected"));
         
-        // Listen for events
         socket.on("case-created", () => {
             if(currentRole === "admin") renderAdminCases();
             if(currentRole === "technician") renderTechCases(); 
@@ -598,11 +593,11 @@ function setupSocket() {
         
         socket.on("images-updated", () => {
              if(currentRole === "technician") renderTechCases(); 
-             if(currentRole === "radiologist") renderRadioCases(); // Radiologist sees new scan instantly
+             if(currentRole === "radiologist") renderRadioCases(); 
         });
 
         socket.on("ai-report-generated", () => {
-             if(currentRole === "radiologist") renderRadioCases(); // Update view to show report
+             if(currentRole === "radiologist") renderRadioCases(); 
              if(currentRole === "doctor") renderDoctorCases();
         });
 
