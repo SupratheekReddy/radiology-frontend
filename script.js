@@ -68,10 +68,10 @@ function updatePlaceholder(role) {
 
 if (roleToggle) {
     roleToggle.addEventListener("click", (e) => {
-        const btn = e.target.closest(".role-btn");
+        const btn = e.target.closest(".role-card");
         if (!btn) return;
 
-        document.querySelectorAll(".role-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".role-card").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
         currentRole = btn.dataset.role;
@@ -79,6 +79,7 @@ if (roleToggle) {
         loginError.style.display = "none";
     });
 }
+
 
 /* ============================================================
    LOGIN FLOW
