@@ -131,13 +131,29 @@ async function handleLogin() {
         currentUser = data.user;
         currentRole = data.user.role;
 
-        loadDashboard();
+        // SWITCH TO DASHBOARD
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("appLayout").style.display = "flex";
+
+        // Update sidebar profile
+        document.getElementById("displayUsername").textContent = currentUser.username;
+        document.getElementById("displayRole").textContent = currentRole;
+
+        // Build role-based sidebar
+        buildSidebarForRole();
+
+        // Load role dashboard
+        loadRoleDashboard();
+
+        // Start socket
         setupSocket();
+
     } catch (err) {
         loginError.textContent = err.message || "Login failed.";
         loginError.style.display = "block";
     }
 }
+
 
 /* ============================================================
    DASHBOARD LOADING
