@@ -1,5 +1,5 @@
 /* ============================================================
-   FRONTEND SCRIPT.JS — COMPLETE (With Doctor View Fixed)
+   FRONTEND SCRIPT.JS — FINAL FIX (ID Mismatch + Auto Login)
 ============================================================ */
 
 const API_BASE = "https://radiology-backend-vvor.onrender.com";
@@ -8,6 +8,35 @@ const API_BASE = "https://radiology-backend-vvor.onrender.com";
 let socket = null;
 let currentUser = null;
 let currentRole = "patient";
+
+/* ============================================================
+   INITIALIZATION (Check if already logged in)
+============================================================ */
+window.addEventListener('DOMContentLoaded', checkSession);
+
+async function checkSession() {
+    try {
+        const data = await apiRequest("/auth/me");
+        if (data.success && data.user) {
+            // Restore session
+            currentUser = data.user;
+            currentRole = data.user.role;
+            
+            // Show Dashboard immediately
+            document.getElementById("landingPage").style.display = "none";
+            document.getElementById("loginPage").style.display = "none";
+            document.getElementById("appLayout").style.display = "flex";
+
+            updateSidebarProfile();
+            buildSidebarForRole();
+            loadRoleDashboard();
+            setupSocket();
+        }
+    } catch (err) {
+        // Not logged in, stay on landing page
+        console.log("No active session");
+    }
+}
 
 /* ============================================================
    PAGE NAVIGATION
@@ -24,10 +53,20 @@ function navigateToHome() {
     document.getElementById("appLayout").style.display = "none";
 }
 
-function logout() {
+async function logout() {
+    try {
+        await apiRequest("/auth/logout", { method: "POST" });
+    } catch(e) {}
     currentUser = null;
     currentRole = "patient";
-    location.reload(); // Simple reload to clear state
+    window.location.reload(); 
+}
+
+function updateSidebarProfile() {
+    if(currentUser) {
+        document.getElementById("displayUsername").textContent = currentUser.username;
+        document.getElementById("displayRole").textContent = currentRole;
+    }
 }
 
 /* ============================================================
@@ -123,9 +162,7 @@ async function handleLogin() {
         document.getElementById("loginPage").style.display = "none";
         document.getElementById("appLayout").style.display = "flex";
 
-        document.getElementById("displayUsername").textContent = currentUser.username;
-        document.getElementById("displayRole").textContent = currentRole;
-
+        updateSidebarProfile();
         buildSidebarForRole();
         loadRoleDashboard();
         setupSocket();
@@ -186,7 +223,7 @@ function loadRoleDashboard() {
         refreshAdminDropdowns();
         renderAdminCases();
     } else if (currentRole === "doctor") {
-        renderDoctorCases(); // <--- This function is now fully implemented below
+        renderDoctorCases(); 
     } else if (currentRole === "technician") {
         renderTechCases(); 
     } else if (currentRole === "radiologist") {
@@ -555,24 +592,24 @@ async function generateAIReport(caseId) {
 }
 
 /* ============================================================
-   DOCTOR FUNCTIONS (FIXED)
-   Now actually fetches cases assigned to this doctor
+   DOCTOR FUNCTIONS (FIXED - Now shows IMAGES + REPORT)
 ============================================================ */
 async function renderDoctorCases() {
     const list = document.getElementById("doctorCasesList");
     if(!list) return;
     
-    // Safety check
-    if (!currentUser || !currentUser._id) {
-        list.innerHTML = "<div class='case-card'>Error: Doctor ID not found. Relogin.</div>";
+    // Check for 'id' (from server) OR '_id' (legacy)
+    const docId = currentUser?.id || currentUser?._id;
+
+    if (!docId) {
+        list.innerHTML = "<div class='case-card'>Error: Doctor ID not found. Try refreshing the page.</div>";
         return;
     }
 
     list.innerHTML = "<div class='loading-spinner'>Fetching your cases...</div>";
 
     try {
-        // CALL THE ACTUAL ENDPOINT
-        const data = await apiRequest(`/doctor/cases/${currentUser._id}`);
+        const data = await apiRequest(`/doctor/cases/${docId}`);
         const cases = data.cases || [];
 
         if (cases.length === 0) {
@@ -587,10 +624,11 @@ async function renderDoctorCases() {
             card.className = "case-card";
             const displayId = c.caseId || c._id.substring(0,8);
             
-            // Check status
             const hasScan = c.images && c.images.length > 0;
             const hasReport = c.radiologistNotes && c.radiologistNotes.includes("AI ANALYSIS");
+            const imageUrl = hasScan ? c.images[0] : null;
 
+            // Status Badge Logic
             let statusBadge = `<span class="badge" style="background:#eee">Pending</span>`;
             if (hasScan && !hasReport) statusBadge = `<span class="badge" style="background:#fff7ed; color:#c2410c">Scanned</span>`;
             if (hasReport) statusBadge = `<span class="badge" style="background:#d1fae5; color:#065f46">Report Ready</span>`;
@@ -607,8 +645,19 @@ async function renderDoctorCases() {
                     <p><strong>Symptoms:</strong> ${c.symptoms || "-"}</p>
                 </div>
 
+                <!-- 1. SHOW IMAGE IF EXISTS (This was missing before) -->
+                ${hasScan ? `
+                    <div style="margin-top:10px; margin-bottom:10px;">
+                        <small style="color:#666;">Scan Image:</small>
+                        <a href="${imageUrl}" target="_blank">
+                            <img src="${imageUrl}" style="width:100%; height:150px; object-fit:cover; border-radius:6px; border:1px solid #ddd; margin-top:5px;">
+                        </a>
+                    </div>
+                ` : `<div style="padding:15px; background:#f9f9f9; text-align:center; font-size:0.85rem; color:#888; border-radius:6px;">Waiting for Technician</div>`}
+
+                <!-- 2. SHOW REPORT IF EXISTS -->
                 ${hasReport ? `
-                    <div style="background:#f0f9ff; padding:10px; border-radius:6px; margin-top:10px; font-size:0.85rem; border-left:3px solid #0ea5e9;">
+                    <div style="background:#f0f9ff; padding:10px; border-radius:6px; font-size:0.85rem; border-left:3px solid #0ea5e9;">
                         <strong><i class="fa-solid fa-file-medical"></i> Radiologist/AI Report:</strong><br>
                         ${c.radiologistNotes.replace(/\n/g, '<br>')}
                     </div>
@@ -617,11 +666,7 @@ async function renderDoctorCases() {
                             <i class="fa-solid fa-prescription-bottle-medical"></i> Prescribe
                         </button>
                     </div>
-                ` : `
-                    <p style="color:#666; font-size:0.85rem; margin-top:10px;">
-                        <em>Waiting for scans/analysis...</em>
-                    </p>
-                `}
+                ` : ``}
             `;
             list.appendChild(card);
         });
@@ -650,7 +695,7 @@ function setupSocket() {
         socket.on("case-created", () => {
             if(currentRole === "admin") renderAdminCases();
             if(currentRole === "technician") renderTechCases(); 
-            if(currentRole === "doctor") renderDoctorCases(); // Update doctor list too
+            if(currentRole === "doctor") renderDoctorCases(); 
         });
         
         socket.on("images-updated", () => {
@@ -661,7 +706,7 @@ function setupSocket() {
 
         socket.on("ai-report-generated", () => {
              if(currentRole === "radiologist") renderRadioCases(); 
-             if(currentRole === "doctor") renderDoctorCases(); // Doctor sees report instantly
+             if(currentRole === "doctor") renderDoctorCases(); 
         });
 
     } catch(e) {
