@@ -21,7 +21,7 @@
 <body>
 
 <!-- ============================================================
-     VIEW 1 — LANDING PAGE
+     VIEW 1 — LANDING PAGE (100% ORIGINAL)
 =============================================================== -->
 <div id="landingPage">
 
@@ -106,7 +106,7 @@
     </div>
   </section>
 
-  <!-- CLINICAL IMPACT -->
+  <!-- CLINICAL IMPACT (RESTORED) -->
   <section id="impact" class="section bg-soft">
     <div class="container split-view">
       <div class="split-text">
@@ -139,7 +139,7 @@
 </div>
 
 <!-- ==============================================
-      VIEW 2 — LOGIN PAGE
+      VIEW 2 — LOGIN PAGE (100% ORIGINAL)
 ================================================== -->
 <div id="loginPage" style="display:none;">
   <div class="login-container">
@@ -236,7 +236,7 @@
     <div class="content-body" id="mainContainer">
 
       <!-- ============================
-           ADMIN PANEL
+           ADMIN PANEL (FULL ORIGINAL FORMS RESTORED)
       ============================= -->
       <div id="adminSections" class="view-group">
         <!-- TOP STATS -->
@@ -343,9 +343,21 @@
         </div>
       </div> <!-- END ADMIN SECTIONS -->
 
-      <!-- === DOCTOR VIEW === -->
+      <!-- === DOCTOR VIEW (UPDATED: Added 'Create Case' Button & Timeline Sidebar) === -->
       <div id="doctorCasesView" class="view-group" style="display:none">
-        <div class="cards-list" id="doctorCasesList">Doctor Cases Loading...</div>
+        <div style="text-align:right; margin-bottom:15px;">
+            <button class="btn-primary" onclick="openCreateCase()">+ Create New Case</button>
+        </div>
+        <div class="doctor-layout-split">
+            <div class="cards-list" id="doctorCasesList" style="flex:2">Doctor Cases Loading...</div>
+            <div id="timelineSidebar" class="timeline-panel" style="display:none;">
+                <div class="timeline-header">
+                    <h4>Patient History</h4>
+                    <button onclick="closeTimeline()" class="btn-text"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div id="timelineContent"></div>
+            </div>
+        </div>
       </div>
 
       <!-- === PATIENT VIEW === -->
@@ -366,6 +378,50 @@
     </div> <!-- END content-body -->
   </main>
 </div> <!-- END appLayout -->
+
+<!-- ==============================================
+     NEW: HIDDEN MODALS (FOR FEATURES)
+     (Appended at the end, so they don't break layout)
+================================================== -->
+
+<!-- CREATE CASE MODAL -->
+<div id="createCaseModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+        <h3>New Radiology Case</h3>
+        <button onclick="closeModal('createCaseModal')" class="btn-text">x</button>
+    </div>
+    <div class="modal-body">
+        <label>Select Patient</label>
+        <select id="casePatientSelect" class="inp"></select>
+        <label>Scan Type</label>
+        <select id="caseScanType" class="inp">
+            <option>X-Ray</option><option>MRI</option><option>CT Scan</option>
+        </select>
+        <label>Symptoms / Notes</label>
+        <textarea id="caseSymptoms" class="inp" placeholder="e.g. Pain in left wrist..."></textarea>
+    </div>
+    <div class="modal-footer">
+        <button class="btn-primary" onclick="submitCreateCase()">Create Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRESCRIPTION MODAL -->
+<div id="prescribeModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+        <h3>Write Prescription</h3>
+        <button onclick="closeModal('prescribeModal')" class="btn-text">x</button>
+    </div>
+    <div class="modal-body">
+        <textarea id="prescribeText" class="inp" rows="5" placeholder="Enter medication, dosage, and instructions..."></textarea>
+    </div>
+    <div class="modal-footer">
+        <button class="btn-primary" onclick="submitPrescription()">Submit & Email Patient</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
