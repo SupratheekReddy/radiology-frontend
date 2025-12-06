@@ -1,6 +1,6 @@
 /* ============================================================
    FRONTEND SCRIPT.JS — ORIGINAL STRUCTURE + NEW FEATURES
-   (Auto-Triage, Chat, Timeline, Prescriptions, PDF)
+   (Auto-Triage, Chat, Timeline, Prescriptions, PDF, Delete, Rad Notes)
 ============================================================ */
 
 // Matches the port defined in your server.js
@@ -237,7 +237,7 @@ function loadRoleDashboard() {
 }
 
 /* ============================================================
-   ADMIN FUNCTIONS (Keep Original Logic)
+   ADMIN FUNCTIONS
 ============================================================ */
 function getVal(id) { return document.getElementById(id).value.trim(); }
 function setVal(id, val) { document.getElementById(id).value = val; }
@@ -296,9 +296,6 @@ function alertAndReset(successId, inputIds) {
     inputIds.forEach(id => setVal(id, ""));
 }
 
-/* ============================================================
-   ADMIN: SCHEDULING & LISTS
-============================================================ */
 async function refreshAdminDropdowns() {
     try {
         const data = await apiRequest("/admin/lists");
@@ -319,7 +316,19 @@ async function refreshAdminDropdowns() {
     } catch(e) { console.error("Error loading dropdowns", e); }
 }
 
-// ... (Your original scheduleCase logic) ...
+async function scheduleCase() {
+    await apiRequest("/admin/case", {
+        method: "POST",
+        body: {
+            patient: document.getElementById("casePatient").value,
+            doctor: document.getElementById("caseDoctor").value,
+            scanType: document.getElementById("caseScanType").value,
+            symptoms: document.getElementById("caseSymptoms").value
+        }
+    });
+    alert("Scheduled!");
+    renderAdminCases();
+}
 
 async function renderAdminCases() {
     const list = document.getElementById("adminCasesList");
@@ -327,45 +336,51 @@ async function renderAdminCases() {
     list.innerHTML = "Loading...";
     try {
         const data = await apiRequest("/admin/cases");
-        renderListGeneric(list, data.cases || []);
+        
+        if (!data.cases.length) {
+            list.innerHTML = "<div class='case-card'>No cases found.</div>";
+            return;
+        }
+        list.innerHTML = "";
+        data.cases.forEach(c => {
+            const card = document.createElement("div");
+            card.className = "case-card";
+            const displayId = c.caseId || c._id.substring(0,8);
+            
+            // Added DELETE button for Admin
+            card.innerHTML = `
+                <div class="case-top">
+                    <b>${displayId}</b>
+                    <span class="badge badge-scan">${c.scanType || 'Scan'}</span>
+                    <button class="btn-text" style="color:red" onclick="deleteCase('${c._id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="case-meta-line">Patient: ${c.patient?.name || c.patientUsername || "-"}</div>
+                <div class="case-meta-line">Doctor: ${c.doctor?.name || c.doctorUsername || "-"}</div>
+                <div class="case-meta-line">Date: ${c.date || "?"} | ${c.timeSlot || "?"}</div>
+            `;
+            list.appendChild(card);
+        });
     } catch(e) { list.innerHTML = "Error loading cases."; }
 }
 
-function renderListGeneric(container, cases) {
-    if (!cases.length) {
-        container.innerHTML = "<div class='case-card'>No cases found.</div>";
-        return;
-    }
-    container.innerHTML = "";
-    cases.forEach(c => {
-        const card = document.createElement("div");
-        card.className = "case-card";
-        const displayId = c.caseId || c._id.substring(0,8);
-        
-        card.innerHTML = `
-            <div class="case-top">
-                <b>${displayId}</b>
-                <span class="badge badge-scan">${c.scanType || 'Scan'}</span>
-                ${priorityBadge(c.priority)}
-            </div>
-            <div class="case-meta-line">Patient: ${c.patient?.name || c.patientUsername || "-"}</div>
-            <div class="case-meta-line">Doctor: ${c.doctor?.name || c.doctorUsername || "-"}</div>
-            <div class="case-meta-line">Date: ${c.date || "?"} | ${c.timeSlot || "?"}</div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-function priorityBadge(p) {
-    let color = "gray";
-    if(p === "Critical") color = "red";
-    if(p === "Medium") color = "orange";
-    if(p === "Safe") color = "green";
-    return `<span style="color:${color}; font-weight:bold">${p || '-'}</span>`;
+// ✅ NEW: Generic Delete Function (Works for Admin & Radiologist)
+async function deleteCase(id) {
+    if(!confirm("Are you sure you want to delete this case? This cannot be undone.")) return;
+    
+    try {
+        const res = await apiRequest(`/admin/case/${id}`, { method: "DELETE" });
+        if(res.success) {
+            // Refresh based on who is logged in
+            if(currentRole === 'admin') renderAdminCases();
+            if(currentRole === 'radiologist') renderRadioCases();
+        } else {
+            alert("Failed to delete case.");
+        }
+    } catch(e) { alert("Error deleting case."); }
 }
 
 /* ============================================================
-   TECHNICIAN FUNCTIONS (With Badge Fix)
+   TECHNICIAN FUNCTIONS
 ============================================================ */
 
 async function renderTechCases() {
@@ -466,7 +481,7 @@ async function uploadScan(e, caseId) {
 
 
 /* ============================================================
-   RADIOLOGIST FUNCTIONS (UPDATED: Auto-Triage + Chat)
+   RADIOLOGIST FUNCTIONS (UPDATED: Delete + Prescribe/Notes)
 ============================================================ */
 
 async function renderRadioCases() {
@@ -482,7 +497,7 @@ async function renderRadioCases() {
         list.innerHTML = "";
         const readyCases = cases.filter(c => c.images && c.images.length > 0);
 
-        // --- NEW: Sort by Priority (Critical First) ---
+        // Sort by Priority
         const priorityOrder = { Critical: 0, Medium: 1, Safe: 2 };
         readyCases.sort((a,b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
 
@@ -493,20 +508,22 @@ async function renderRadioCases() {
 
         readyCases.forEach(c => {
             const card = document.createElement("div");
-            
-            // --- NEW: Red Flash for Critical Cases ---
             card.className = `case-card ${c.priority === 'Critical' ? 'critical-card' : ''}`;
 
-            const hasReport = c.radiologistNotes && c.radiologistNotes.includes("AI ANALYSIS REPORT");
             const imageUrl = c.images[0]; 
             const displayId = c.caseId || c._id.substring(0,8);
 
-            // --- NEW: Enhanced HTML with Chat & AI Tags ---
             card.innerHTML = `
-                <div class="case-top">
-                    <b>ID: ${displayId}</b>
-                    <span class="badge badge-scan">${c.scanType}</span>
-                    ${c.priority ? `<span class="badge ${c.priority}">${c.priority}</span>` : ''}
+                <div class="case-top" style="display:flex; justify-content:space-between;">
+                    <div>
+                        <b>ID: ${displayId}</b>
+                        <span class="badge badge-scan">${c.scanType}</span>
+                        ${c.priority ? `<span class="badge ${c.priority}">${c.priority}</span>` : ''}
+                    </div>
+                    <!-- ✅ ADDED: Delete Button for Radiologist -->
+                    <button class="btn-text" style="color:red;" onclick="deleteCase('${c._id}')" title="Delete Case">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
 
                 <div class="split-view" style="display:flex; flex-wrap: wrap; gap:15px; margin-top:15px;">
@@ -518,14 +535,14 @@ async function renderRadioCases() {
                         </a>
                         
                         <div style="margin-top:10px;">
-                        ${c.aiData?.diagnosis 
+                        ${c.aiData?.findings 
                             ? `<div class="ai-result-box" style="background:#f8f9fa; padding:10px; border-radius:6px; font-size:0.85rem; border-left: 3px solid #6366f1;">
                                 <div style="margin-bottom:5px;">
-                                    <span class="tag">Conf: ${c.aiData.confidence}</span>
-                                    <span class="tag blue">${c.aiData.bodyPart}</span>
+                                    <span class="tag">Conf: ${c.aiData.confidence || 'N/A'}</span>
+                                    <span class="tag blue">${c.aiData.bodyPart || 'Scan'}</span>
                                 </div>
-                                <strong>Diagnosis:</strong> ${c.aiData.diagnosis}<br>
-                                <small>${c.aiData.findings}</small>
+                                <strong>AI Findings:</strong> ${c.aiData.findings}<br>
+                                <small>Diagnosis: ${c.aiData.diagnosis}</small>
                                </div>`
                             : `<button class="btn-primary full-width" onclick="generateAIReport(event, '${c._id}')">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Run AI Analysis
@@ -534,7 +551,7 @@ async function renderRadioCases() {
                         </div>
                     </div>
 
-                    <!-- RIGHT SIDE: INTERACTIVE CHAT (NEW) -->
+                    <!-- RIGHT SIDE: INTERACTIVE CHAT -->
                     <div style="flex:1; min-width: 200px;">
                         <div class="chat-container" style="border:1px solid #eee; border-radius:8px; height:300px; display:flex; flex-direction:column;">
                             <div class="chat-history" id="chat-${c._id}" style="flex:1; overflow-y:auto; padding:10px; font-size:0.85rem;">
@@ -549,6 +566,17 @@ async function renderRadioCases() {
                                 <button class="btn-text" onclick="sendChat('${c._id}')">Send</button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ✅ ADDED: Radiologist Report Section (Below split view) -->
+                <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <label style="font-weight:bold; font-size:0.9rem;">Radiologist Report / Prescription for Doctor:</label>
+                    <textarea id="note-${c._id}" class="inp" rows="3" placeholder="Write your professional findings, diagnosis, and prescription here...">${c.radiologistNotes || ''}</textarea>
+                    <div style="text-align:right;">
+                        <button class="btn-primary-outline" onclick="saveRadioNote('${c._id}')">
+                            <i class="fa-solid fa-paper-plane"></i> Save & Send to Doctor
+                        </button>
                     </div>
                 </div>
             `;
@@ -573,7 +601,6 @@ async function generateAIReport(e, caseId) {
     }
 }
 
-// --- NEW: Chat Functionality ---
 async function sendChat(caseId) {
     const input = document.getElementById(`inp-${caseId}`);
     const message = input.value;
@@ -597,8 +624,24 @@ async function sendChat(caseId) {
     }
 }
 
+// ✅ NEW: Save Radiologist Note Function
+async function saveRadioNote(id) {
+    const note = document.getElementById(`note-${id}`).value;
+    if(!note) return alert("Please enter a note before saving.");
+    
+    try {
+        await apiRequest(`/radio/notes/${id}`, { 
+            method: "POST", 
+            body: { radiologistNotes: note } 
+        });
+        alert("Report Saved & Sent to Doctor!");
+    } catch(e) {
+        alert("Failed to save note.");
+    }
+}
+
 /* ============================================================
-   DOCTOR FUNCTIONS (UPDATED: Prescriptions + Timeline + Create Case)
+   DOCTOR FUNCTIONS (UPDATED: Shows Rad Notes)
 ============================================================ */
 async function renderDoctorCases() {
     const list = document.getElementById("doctorCasesList");
@@ -631,14 +674,20 @@ async function renderDoctorCases() {
                     </button>
                 </div>
 
+                <!-- ✅ ADDED: Display Radiologist Report prominently -->
+                <div style="background:#f0fdf4; padding:12px; border-radius:8px; margin:10px 0; border:1px solid #bbf7d0;">
+                    <strong style="color:#166534"><i class="fa-solid fa-user-md"></i> Radiologist Report:</strong>
+                    <p style="white-space: pre-line; margin-top:5px; font-size:0.95rem;">${c.radiologistNotes || "Pending Analysis by Radiologist..."}</p>
+                </div>
+
                 <div class="split-view" style="display:flex; gap:15px; margin-top:10px;">
                     <img src="${imageUrl || 'https://via.placeholder.com/150?text=Waiting'}" style="width:100px; height:100px; object-fit:cover; border-radius:6px;">
                     
                     <div style="flex:1;">
-                        <p><strong>Diagnosis:</strong> ${c.aiData?.diagnosis || 'Pending'}</p>
-                        <p><strong>Rx:</strong> ${c.prescription || 'None'}</p>
+                        <p><strong>AI Findings:</strong> ${c.aiData?.findings || 'Pending'}</p>
+                        <p><strong>Final Rx:</strong> ${c.prescription || 'None'}</p>
                         ${c.images.length > 0 && !c.prescription ? `
-                            <button class="btn-primary-outline full-width" onclick="openRx('${c._id}')">Write Prescription</button>
+                            <button class="btn-primary-outline full-width" onclick="openRx('${c._id}')">Write Final Prescription</button>
                         ` : ''}
                     </div>
                 </div>
@@ -725,9 +774,10 @@ async function renderPatientCases() {
                 <div class="case-card">
                     <h3>${c.scanType} Scan</h3>
                     <p>Date: ${new Date(c.date).toLocaleDateString()}</p>
+                    
                     <div class="ai-box" style="background:#f8f9fa; padding:10px; margin:10px 0;">
-                        <b>Diagnosis:</b> ${c.aiData?.diagnosis || 'Pending'}<br>
-                        <b>Rx:</b> ${c.prescription || 'Pending'}
+                        <b>Radiologist Findings:</b> ${c.radiologistNotes || 'Pending'}<br>
+                        <b>Doctor Rx:</b> ${c.prescription || 'Pending'}
                     </div>
                     ${c.aiData ? `<a href="${API_BASE}/patient/pdf/${c._id}" target="_blank" class="btn-primary full-width" style="display:block; text-align:center; text-decoration:none;">Download Report (PDF)</a>` : ''}
                 </div>`;
