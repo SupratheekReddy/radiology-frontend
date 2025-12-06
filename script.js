@@ -4,7 +4,7 @@
 ============================================================ */
 
 // Matches the port defined in your server.js
-const API_BASE = "http://localhost:5000"; 
+const API_BASE = "https://radiology-backend-vvor.onrender.com";  
 
 // GLOBAL STATE
 let socket = null;
