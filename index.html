@@ -380,6 +380,94 @@
 </div> <!-- END appLayout -->
 
 <!-- ==============================================
+     VIEW 4: FULL FOCUS CASE VIEW (✅ NEW ADDITION)
+================================================== -->
+<div id="fullCaseView" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#f8fafc; z-index:2000; overflow-y:auto;">
+  
+  <!-- Focus Header -->
+  <div style="background:white; padding:15px 30px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div style="display:flex; align-items:center; gap:15px;">
+        <div style="background:#e0e7ff; padding:10px; border-radius:50%; color:var(--primary);"><i class="fa-solid fa-hospital-user fa-xl"></i></div>
+        <div>
+            <h2 id="focusPatientName" style="margin:0; font-size:1.4rem;">Patient Name</h2>
+            <span id="focusCaseId" class="badge" style="font-size:0.8rem;">CASE-ID</span>
+        </div>
+    </div>
+    <button class="btn-primary-outline" onclick="closeCaseView()">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </button>
+  </div>
+
+  <!-- Focus Content Grid -->
+  <div class="container" style="padding:30px 0; display:grid; grid-template-columns: 1.2fr 0.8fr; gap:30px;">
+    
+    <!-- LEFT COLUMN: SCAN & AI -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+        <!-- Image Section -->
+        <div style="background:white; padding:20px; border-radius:16px; border:1px solid #eee; box-shadow: var(--shadow);">
+            <h3 style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;"><i class="fa-solid fa-x-ray"></i> Medical Scan</h3>
+            <img id="focusImage" src="" style="width:100%; max-height:500px; object-fit:contain; background:black; border-radius:8px;">
+        </div>
+        
+        <!-- AI Results Section -->
+        <div style="background:white; padding:20px; border-radius:16px; border:1px solid #eee; box-shadow: var(--shadow);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--primary);"></i> AI Analysis</h3>
+                <button class="btn-primary" id="btnRunAI" onclick="runFocusAI()">Run Advanced Analysis</button>
+            </div>
+
+            <!-- Detailed AI Output Container -->
+            <div id="aiResults" style="display:none;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div style="background:#f0f9ff; padding:10px; border-radius:8px;"><strong>Diagnosis:</strong> <span id="aiDiagnosis"></span></div>
+                    <div style="background:#f0f9ff; padding:10px; border-radius:8px;"><strong>Confidence:</strong> <span id="aiConfidence"></span></div>
+                </div>
+                
+                <div style="background:#fff7ed; padding:15px; border-radius:8px; border-left:4px solid #f97316; margin-bottom:15px;">
+                    <strong style="color:#c2410c;">Detailed Findings:</strong>
+                    <p id="aiFindings" style="margin-top:5px; line-height:1.6; color:#431407;"></p>
+                </div>
+
+                <div style="background:#f0fdf4; padding:15px; border-radius:8px; border-left:4px solid #16a34a;">
+                    <strong style="color:#15803d;">Recommended Treatment / Next Steps:</strong>
+                    <p id="aiTreatment" style="margin-top:5px; font-weight:bold; color:#14532d;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: WORKSPACE -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+        
+        <!-- Radiologist Reporting Tool -->
+        <div style="background:white; padding:20px; border-radius:16px; border:1px solid #eee; box-shadow: var(--shadow);">
+            <h3 style="margin-bottom:10px;"><i class="fa-solid fa-file-medical"></i> Radiologist Report</h3>
+            <p style="font-size:0.85rem; color:#666; margin-bottom:10px;">Write your official findings and prescription for the doctor.</p>
+            <textarea id="focusNotes" class="inp" rows="12" style="font-family:monospace; font-size:0.9rem;" placeholder="1. Findings...&#10;2. Impression...&#10;3. Recommendation..."></textarea>
+            <div style="text-align:right; margin-top:10px;">
+                <button class="btn-primary" onclick="saveFocusNotes()">
+                    <i class="fa-solid fa-floppy-disk"></i> Save & Sign Report
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Assistant Chat -->
+        <div class="chat-container" style="height:400px; background:white; padding:0; border:1px solid #eee; box-shadow: var(--shadow); border-radius:16px; overflow:hidden;">
+            <div style="padding:15px; border-bottom:1px solid #eee; background:#f8fafc; font-weight:bold; color:var(--primary);">
+                <i class="fa-solid fa-robot"></i> AI Assistant
+            </div>
+            <div id="focusChatHistory" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px;"></div>
+            <div style="padding:10px; border-top:1px solid #eee; display:flex; background:white; gap:5px;">
+                <input type="text" id="focusChatInput" class="inp" style="margin:0;" placeholder="Ask about the scan...">
+                <button class="btn-text" style="background:var(--primary); color:white; padding:0 20px; border-radius:8px;" onclick="sendFocusChat()">Send</button>
+            </div>
+        </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
      NEW: HIDDEN MODALS (FOR FEATURES)
      (Appended at the end, so they don't break layout)
 ================================================== -->

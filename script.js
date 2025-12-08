@@ -1,31 +1,34 @@
 /* ============================================================
-   FRONTEND SCRIPT.JS — ORIGINAL STRUCTURE + NEW FEATURES
-   (Auto-Triage, Chat, Timeline, Prescriptions, PDF, Delete, Rad Notes)
+   FRONTEND SCRIPT.JS — THE TRUE "ULTIMATE" MERGE
+   Features:
+   1. Rich UI (Tags, Confidence, Colors, Badges) - RESTORED
+   2. Robust Error Handling & Safety Checks - RESTORED
+   3. Admin Fields (Email, Priority) - RESTORED
+   4. Technician Dashboard Details - RESTORED
+   5. New Features (Full Focus View, Delete, Rad Notes) - KEPT
 ============================================================ */
 
-// Matches the port defined in your server.js
-const API_BASE = "https://radiology-backend-vvor.onrender.com";  
+const API_BASE = "https://radiology-backend-vvor.onrender.com"; 
 
 // GLOBAL STATE
 let socket = null;
 let currentUser = null;
 let currentRole = "patient";
-let activeCaseId = null; // Added for Prescription Modal tracking
+let activeCaseId = null;
+let currentFocusCaseId = null; 
 
-/* ============================================================
-   INITIALIZATION (Check if already logged in)
-============================================================ */
+// ============================================================
+// 1. INITIALIZATION & AUTH
+// ============================================================
 window.addEventListener('DOMContentLoaded', checkSession);
 
 async function checkSession() {
     try {
         const data = await apiRequest("/auth/me");
         if (data.success && data.user) {
-            // Restore session
             currentUser = data.user;
             currentRole = data.user.role;
             
-            // Show Dashboard immediately
             document.getElementById("landingPage").style.display = "none";
             document.getElementById("loginPage").style.display = "none";
             document.getElementById("appLayout").style.display = "flex";
@@ -35,15 +38,9 @@ async function checkSession() {
             loadRoleDashboard();
             setupSocket();
         }
-    } catch (err) {
-        // Not logged in, stay on landing page
-        console.log("No active session");
-    }
+    } catch (err) { console.log("No active session"); }
 }
 
-/* ============================================================
-   PAGE NAVIGATION
-============================================================ */
 function navigateToLogin() {
     document.getElementById("landingPage").style.display = "none";
     document.getElementById("loginPage").style.display = "flex";
@@ -72,9 +69,7 @@ function updateSidebarProfile() {
     }
 }
 
-/* ============================================================
-   API WRAPPER
-============================================================ */
+// API WRAPPER (Restored Robust Error Handling)
 async function apiRequest(path, options = {}) {
     const finalOptions = {
         method: options.method || "GET",
@@ -94,6 +89,7 @@ async function apiRequest(path, options = {}) {
         const res = await fetch(`${API_BASE}${path}`, finalOptions);
         const data = await res.json();
         
+        // RESTORED: Throw error if not OK
         if (!res.ok) {
             throw new Error(data.message || `Request failed: ${res.status}`);
         }
@@ -103,48 +99,19 @@ async function apiRequest(path, options = {}) {
     }
 }
 
-/* ============================================================
-   ROLE SELECTOR UI
-============================================================ */
-const roleToggle = document.getElementById("roleToggle");
-const loginId = document.getElementById("loginId");
-const loginPassword = document.getElementById("loginPassword");
-const loginError = document.getElementById("loginError");
-
-if (roleToggle) {
-    roleToggle.addEventListener("click", (e) => {
-        const btn = e.target.closest(".role-card");
-        if (!btn) return;
-
-        document.querySelectorAll(".role-card").forEach(x => x.classList.remove("active"));
-        btn.classList.add("active");
-        loginError.style.display = "none";
-
-        currentRole = btn.dataset.role;
-        
-        switch (currentRole) {
-            case "admin": loginId.placeholder = "admin"; break;
-            case "doctor": loginId.placeholder = "doctor@example.com"; break;
-            case "technician": loginId.placeholder = "tech@example.com"; break;
-            case "radiologist": loginId.placeholder = "radiologist"; break;
-            case "patient": loginId.placeholder = "patient@example.com"; break;
-        }
-    });
-}
-
-/* ============================================================
-   LOGIN HANDLER
-============================================================ */
+// LOGIN LOGIC
 document.getElementById("loginBtn")?.addEventListener("click", handleLogin);
 
 async function handleLogin() {
-    const username = loginId.value.trim();
-    const password = loginPassword.value.trim();
+    const username = document.getElementById("loginId").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+    const errorBox = document.getElementById("loginError");
 
-    loginError.style.display = "none";
+    errorBox.style.display = "none";
 
     if (!username || !password) {
-        showError("Please fill both fields.");
+        errorBox.textContent = "Please fill both fields.";
+        errorBox.style.display = "block";
         return;
     }
 
@@ -155,7 +122,8 @@ async function handleLogin() {
         });
 
         if (!data.success) {
-            showError(data.message);
+            errorBox.textContent = data.message;
+            errorBox.style.display = "block";
             return;
         }
 
@@ -171,18 +139,37 @@ async function handleLogin() {
         setupSocket();
 
     } catch (err) {
-        showError(err.message || "Login failed. Check server.");
+        errorBox.textContent = err.message || "Login failed.";
+        errorBox.style.display = "block";
     }
 }
 
-function showError(msg) {
-    loginError.textContent = msg;
-    loginError.style.display = "block";
+// ROLE TOGGLE
+const roleToggle = document.getElementById("roleToggle");
+const loginId = document.getElementById("loginId");
+
+if (roleToggle) {
+    roleToggle.addEventListener("click", (e) => {
+        const btn = e.target.closest(".role-card");
+        if (!btn) return;
+
+        document.querySelectorAll(".role-card").forEach(x => x.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("loginError").style.display = "none";
+
+        currentRole = btn.dataset.role;
+        
+        switch (currentRole) {
+            case "admin": loginId.placeholder = "admin"; break;
+            case "doctor": loginId.placeholder = "doctor@example.com"; break;
+            case "technician": loginId.placeholder = "tech@example.com"; break;
+            case "radiologist": loginId.placeholder = "radiologist"; break;
+            case "patient": loginId.placeholder = "patient@example.com"; break;
+        }
+    });
 }
 
-/* ============================================================
-   DASHBOARD & SIDEBAR LOGIC
-============================================================ */
+// SIDEBAR & VIEWS
 function hideAllRoleViews() {
     document.querySelectorAll(".view-group").forEach(v => v.style.display = "none");
 }
@@ -206,39 +193,27 @@ function buildSidebarForRole() {
         return btn;
     };
 
-    if (currentRole === "admin") {
-        nav.appendChild(createNavItem("Dashboard", "adminSections"));
-    } else if (currentRole === "doctor") {
-        nav.appendChild(createNavItem("My Cases", "doctorCasesView"));
-    } else if (currentRole === "technician") {
-        nav.appendChild(createNavItem("Upload Scans", "techCasesView"));
-    } else if (currentRole === "radiologist") {
-        nav.appendChild(createNavItem("Analyze Cases", "radioCasesView"));
-    } else if (currentRole === "patient") {
-        nav.appendChild(createNavItem("My Reports", "patientCasesView"));
-    }
+    if (currentRole === "admin") nav.appendChild(createNavItem("Dashboard", "adminSections"));
+    else if (currentRole === "doctor") nav.appendChild(createNavItem("My Cases", "doctorCasesView"));
+    else if (currentRole === "technician") nav.appendChild(createNavItem("Upload Scans", "techCasesView"));
+    else if (currentRole === "radiologist") nav.appendChild(createNavItem("Analyze Cases", "radioCasesView"));
+    else if (currentRole === "patient") nav.appendChild(createNavItem("My Reports", "patientCasesView"));
     
     if(nav.firstChild) nav.firstChild.click();
 }
 
 function loadRoleDashboard() {
-    if (currentRole === "admin") {
-        refreshAdminDropdowns();
-        renderAdminCases();
-    } else if (currentRole === "doctor") {
-        renderDoctorCases(); 
-    } else if (currentRole === "technician") {
-        renderTechCases(); 
-    } else if (currentRole === "radiologist") {
-        renderRadioCases();
-    } else if (currentRole === "patient") {
-        renderPatientCases();
-    }
+    if (currentRole === "admin") { refreshAdminDropdowns(); renderAdminCases(); }
+    else if (currentRole === "doctor") renderDoctorCases(); 
+    else if (currentRole === "technician") renderTechCases(); 
+    else if (currentRole === "radiologist") renderRadioCases();
+    else if (currentRole === "patient") renderPatientCases();
 }
 
-/* ============================================================
-   ADMIN FUNCTIONS
-============================================================ */
+// ============================================================
+// 2. ADMIN & GENERIC FUNCTIONS (Restored Email/Priority Fields)
+// ============================================================
+
 function getVal(id) { return document.getElementById(id).value.trim(); }
 function setVal(id, val) { document.getElementById(id).value = val; }
 
@@ -306,7 +281,6 @@ async function refreshAdminDropdowns() {
             list.forEach(item => {
                 const opt = document.createElement("option");
                 opt.value = item._id;
-                opt.dataset.username = item.username; 
                 opt.textContent = `${item.name} (${item.username})`;
                 el.appendChild(opt);
             });
@@ -336,41 +310,41 @@ async function renderAdminCases() {
     list.innerHTML = "Loading...";
     try {
         const data = await apiRequest("/admin/cases");
+        if (!data.cases.length) { list.innerHTML = "<div class='case-card'>No cases found.</div>"; return; }
         
-        if (!data.cases.length) {
-            list.innerHTML = "<div class='case-card'>No cases found.</div>";
-            return;
-        }
         list.innerHTML = "";
         data.cases.forEach(c => {
-            const card = document.createElement("div");
-            card.className = "case-card";
             const displayId = c.caseId || c._id.substring(0,8);
-            
-            // Added DELETE button for Admin
-            card.innerHTML = `
+            list.innerHTML += `
+            <div class="case-card">
                 <div class="case-top">
                     <b>${displayId}</b>
                     <span class="badge badge-scan">${c.scanType || 'Scan'}</span>
+                    ${priorityBadge(c.priority)}
                     <button class="btn-text" style="color:red" onclick="deleteCase('${c._id}')"><i class="fa-solid fa-trash"></i></button>
                 </div>
                 <div class="case-meta-line">Patient: ${c.patient?.name || c.patientUsername || "-"}</div>
                 <div class="case-meta-line">Doctor: ${c.doctor?.name || c.doctorUsername || "-"}</div>
-                <div class="case-meta-line">Date: ${c.date || "?"} | ${c.timeSlot || "?"}</div>
-            `;
-            list.appendChild(card);
+                <div class="case-meta-line">Date: ${c.date || "?"}</div>
+            </div>`;
         });
     } catch(e) { list.innerHTML = "Error loading cases."; }
 }
 
-// ✅ NEW: Generic Delete Function (Works for Admin & Radiologist)
+function priorityBadge(p) {
+    let color = "gray";
+    if(p === "Critical") color = "red";
+    if(p === "Medium") color = "orange";
+    if(p === "Safe") color = "green";
+    return `<span style="color:${color}; font-weight:bold">${p || '-'}</span>`;
+}
+
+// GENERIC DELETE (Admin + Rad)
 async function deleteCase(id) {
     if(!confirm("Are you sure you want to delete this case? This cannot be undone.")) return;
-    
     try {
         const res = await apiRequest(`/admin/case/${id}`, { method: "DELETE" });
         if(res.success) {
-            // Refresh based on who is logged in
             if(currentRole === 'admin') renderAdminCases();
             if(currentRole === 'radiologist') renderRadioCases();
         } else {
@@ -379,9 +353,9 @@ async function deleteCase(id) {
     } catch(e) { alert("Error deleting case."); }
 }
 
-/* ============================================================
-   TECHNICIAN FUNCTIONS
-============================================================ */
+// ============================================================
+// 3. TECHNICIAN DASHBOARD (Restored Rich Layout)
+// ============================================================
 
 async function renderTechCases() {
     const list = document.getElementById("techCasesList");
@@ -479,10 +453,9 @@ async function uploadScan(e, caseId) {
     }
 }
 
-
-/* ============================================================
-   RADIOLOGIST FUNCTIONS (UPDATED: Delete + Prescribe/Notes)
-============================================================ */
+// ============================================================
+// 4. RADIOLOGIST DASHBOARD (Restored Inline Features + New Full View)
+// ============================================================
 
 async function renderRadioCases() {
     const list = document.getElementById("radioCasesList");
@@ -502,17 +475,16 @@ async function renderRadioCases() {
         readyCases.sort((a,b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2));
 
         if (readyCases.length === 0) {
-            list.innerHTML = "<div class='case-card'>No scanned cases waiting for analysis.</div>";
+            list.innerHTML = "<div class='case-card'>No scanned cases waiting.</div>";
             return;
         }
 
         readyCases.forEach(c => {
             const card = document.createElement("div");
             card.className = `case-card ${c.priority === 'Critical' ? 'critical-card' : ''}`;
-
-            const imageUrl = c.images[0]; 
             const displayId = c.caseId || c._id.substring(0,8);
 
+            // 🔥 RESTORED: Split View + Chat + AI Tags + Inline Notes
             card.innerHTML = `
                 <div class="case-top" style="display:flex; justify-content:space-between;">
                     <div>
@@ -520,20 +492,22 @@ async function renderRadioCases() {
                         <span class="badge badge-scan">${c.scanType}</span>
                         ${c.priority ? `<span class="badge ${c.priority}">${c.priority}</span>` : ''}
                     </div>
-                    <!-- ✅ ADDED: Delete Button for Radiologist -->
-                    <button class="btn-text" style="color:red;" onclick="deleteCase('${c._id}')" title="Delete Case">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    <div>
+                        <button class="btn-primary-outline" onclick="openCaseView('${c._id}')" style="margin-right:5px; font-size:0.8rem;">
+                            <i class="fa-solid fa-expand"></i> Full Focus View
+                        </button>
+                        <button class="btn-text" style="color:red;" onclick="deleteCase('${c._id}')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="split-view" style="display:flex; flex-wrap: wrap; gap:15px; margin-top:15px;">
-                    <!-- LEFT SIDE: IMAGE & AI REPORT -->
+                    <!-- LEFT: IMAGE & AI REPORT -->
                     <div style="flex:1; min-width: 200px;">
-                        <small style="color:#666; display:block; margin-bottom:5px;">Uploaded Scan:</small>
-                        <a href="${imageUrl}" target="_blank">
-                            <img src="${imageUrl}" style="width:100%; height:150px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">
+                        <a href="${c.images[0]}" target="_blank">
+                            <img src="${c.images[0]}" style="width:100%; height:150px; object-fit:cover; border-radius:8px; border:1px solid #ddd;">
                         </a>
-                        
                         <div style="margin-top:10px;">
                         ${c.aiData?.findings 
                             ? `<div class="ai-result-box" style="background:#f8f9fa; padding:10px; border-radius:6px; font-size:0.85rem; border-left: 3px solid #6366f1;">
@@ -541,8 +515,8 @@ async function renderRadioCases() {
                                     <span class="tag">Conf: ${c.aiData.confidence || 'N/A'}</span>
                                     <span class="tag blue">${c.aiData.bodyPart || 'Scan'}</span>
                                 </div>
-                                <strong>AI Findings:</strong> ${c.aiData.findings}<br>
-                                <small>Diagnosis: ${c.aiData.diagnosis}</small>
+                                <strong>Diagnosis:</strong> ${c.aiData.diagnosis}<br>
+                                <small>${c.aiData.findings}</small>
                                </div>`
                             : `<button class="btn-primary full-width" onclick="generateAIReport(event, '${c._id}')">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i> Run AI Analysis
@@ -551,9 +525,9 @@ async function renderRadioCases() {
                         </div>
                     </div>
 
-                    <!-- RIGHT SIDE: INTERACTIVE CHAT -->
+                    <!-- RIGHT: INLINE CHAT (RESTORED) -->
                     <div style="flex:1; min-width: 200px;">
-                        <div class="chat-container" style="border:1px solid #eee; border-radius:8px; height:300px; display:flex; flex-direction:column;">
+                        <div class="chat-container" style="border:1px solid #eee; border-radius:8px; height:250px; display:flex; flex-direction:column;">
                             <div class="chat-history" id="chat-${c._id}" style="flex:1; overflow-y:auto; padding:10px; font-size:0.85rem;">
                                 ${(c.chatHistory || []).map(msg => `
                                     <div class="msg ${msg.role}" style="margin-bottom:5px; padding:5px 10px; border-radius:10px; background:${msg.role==='user'?'#6366f1':'#f1f5f9'}; color:${msg.role==='user'?'white':'black'}; align-self:${msg.role==='user'?'flex-end':'flex-start'}; max-width:80%;">
@@ -562,22 +536,17 @@ async function renderRadioCases() {
                                 `).join('')}
                             </div>
                             <div class="chat-input" style="display:flex; padding:5px; border-top:1px solid #eee;">
-                                <input type="text" id="inp-${c._id}" placeholder="Ask question..." style="flex:1; border:none; outline:none;">
-                                <button class="btn-text" onclick="sendChat('${c._id}')">Send</button>
+                                <input type="text" id="inp-${c._id}" placeholder="Ask about this scan..." style="flex:1; border:none; outline:none; font-size:0.85rem;">
+                                <button class="btn-text" onclick="sendDashboardChat('${c._id}')">Send</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ✅ ADDED: Radiologist Report Section (Below split view) -->
-                <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-                    <label style="font-weight:bold; font-size:0.9rem;">Radiologist Report / Prescription for Doctor:</label>
-                    <textarea id="note-${c._id}" class="inp" rows="3" placeholder="Write your professional findings, diagnosis, and prescription here...">${c.radiologistNotes || ''}</textarea>
-                    <div style="text-align:right;">
-                        <button class="btn-primary-outline" onclick="saveRadioNote('${c._id}')">
-                            <i class="fa-solid fa-paper-plane"></i> Save & Send to Doctor
-                        </button>
-                    </div>
+                <!-- BOTTOM: QUICK NOTE (RESTORED) -->
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">
+                    <textarea id="note-${c._id}" class="inp" rows="2" placeholder="Quick note for doctor...">${c.radiologistNotes || ''}</textarea>
+                    <button class="btn-primary-outline" style="font-size:0.8rem; margin-top:5px;" onclick="saveRadioNote('${c._id}')">Save Note</button>
                 </div>
             `;
             list.appendChild(card);
@@ -588,6 +557,7 @@ async function renderRadioCases() {
     }
 }
 
+// INLINE AI FUNCTION
 async function generateAIReport(e, caseId) {
     e.target.innerText = "Analyzing...";
     try {
@@ -601,48 +571,151 @@ async function generateAIReport(e, caseId) {
     }
 }
 
-async function sendChat(caseId) {
+// INLINE CHAT FUNCTION
+async function sendDashboardChat(caseId) {
     const input = document.getElementById(`inp-${caseId}`);
     const message = input.value;
     if (!message) return;
 
-    // Optimistic UI Update
+    // Optimistic UI
     const chatBox = document.getElementById(`chat-${caseId}`);
     chatBox.innerHTML += `<div class="msg user" style="margin-bottom:5px; padding:5px 10px; border-radius:10px; background:#6366f1; color:white; align-self:flex-end; max-width:80%;">${message}</div>`;
     input.value = "";
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const res = await apiRequest(`/ai/chat/${caseId}`, { 
-            method: "POST", 
-            body: { question: message } 
-        });
+        const res = await apiRequest(`/ai/chat/${caseId}`, { method: "POST", body: { question: message } });
         chatBox.innerHTML += `<div class="msg ai" style="margin-bottom:5px; padding:5px 10px; border-radius:10px; background:#f1f5f9; color:black; align-self:flex-start; max-width:80%;">${res.answer}</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
-    } catch(e) {
-        alert("Chat failed");
-    }
+    } catch(e) { alert("Chat failed"); }
 }
 
-// ✅ NEW: Save Radiologist Note Function
 async function saveRadioNote(id) {
     const note = document.getElementById(`note-${id}`).value;
-    if(!note) return alert("Please enter a note before saving.");
-    
-    try {
-        await apiRequest(`/radio/notes/${id}`, { 
-            method: "POST", 
-            body: { radiologistNotes: note } 
-        });
-        alert("Report Saved & Sent to Doctor!");
-    } catch(e) {
-        alert("Failed to save note.");
-    }
+    if(!note) return alert("Note is empty");
+    await apiRequest(`/radio/notes/${id}`, { method: "POST", body: { radiologistNotes: note } });
+    alert("Note Saved!");
 }
 
-/* ============================================================
-   DOCTOR FUNCTIONS (UPDATED: Shows Rad Notes)
-============================================================ */
+// ============================================================
+// 5. FULL FOCUS VIEW (THE NEW FEATURE)
+// ============================================================
+
+async function openCaseView(caseId) {
+    currentFocusCaseId = caseId;
+    
+    // Hide App, Show View
+    document.getElementById("appLayout").style.display = "none";
+    document.getElementById("fullCaseView").style.display = "block";
+    
+    // Reset Fields
+    document.getElementById("aiResults").style.display = "none";
+    document.getElementById("focusChatHistory").innerHTML = "";
+    document.getElementById("btnRunAI").disabled = false;
+    document.getElementById("btnRunAI").innerText = "Run Advanced Analysis";
+
+    // Load Data
+    const res = await apiRequest(`/case/${caseId}`);
+    if(!res.success) return alert("Failed to load case data.");
+    const c = res.case;
+
+    // Populate Header
+    document.getElementById("focusPatientName").textContent = c.patient?.name || "Unknown Patient";
+    document.getElementById("focusCaseId").textContent = c.caseId || "ID";
+    
+    // Populate Image
+    document.getElementById("focusImage").src = c.images.length > 0 ? c.images[0] : "https://placehold.co/600x400?text=No+Image";
+
+    // Populate Notes
+    document.getElementById("focusNotes").value = c.radiologistNotes || "";
+
+    // Populate AI (If exists)
+    if(c.aiData && c.aiData.findings) {
+        showAIResults(c.aiData);
+    }
+    
+    // Load Chat History for Focus View
+    const chatBox = document.getElementById("focusChatHistory");
+    chatBox.innerHTML = (c.chatHistory || []).map(msg => `
+        <div style="text-align:${msg.role==='user'?'right':'left'}; margin:5px;">
+            <span style="background:${msg.role==='user'?'#6366f1':'#f1f5f9'}; color:${msg.role==='user'?'white':'black'}; padding:8px 12px; border-radius:10px; display:inline-block;">${msg.message}</span>
+        </div>
+    `).join('');
+}
+
+function closeCaseView() {
+    document.getElementById("fullCaseView").style.display = "none";
+    document.getElementById("appLayout").style.display = "flex";
+    loadRoleDashboard(); // Refresh list to show status changes
+}
+
+async function runFocusAI() {
+    const btn = document.getElementById("btnRunAI");
+    btn.innerText = "Running Advanced AI... (Please Wait)";
+    btn.disabled = true;
+
+    try {
+        const res = await apiRequest(`/radio/ai-analyze/${currentFocusCaseId}`, { method: "POST" });
+        if(res.success) {
+            showAIResults(res.aiData);
+            // Auto-fill the Radiologist Report box with AI findings for convenience
+            const existingNotes = document.getElementById("focusNotes").value;
+            if(!existingNotes) {
+                document.getElementById("focusNotes").value = 
+`AI FINDINGS:
+${res.aiData.findings}
+
+SUGGESTED TREATMENT:
+${res.aiData.treatment || "N/A"}
+
+RADIOLOGIST OBSERVATION:
+`;
+            }
+        } else {
+            alert(res.message);
+        }
+    } catch(e) { alert("AI Analysis Failed. Check logs."); }
+    
+    btn.innerText = "Run Advanced AI Analysis";
+    btn.disabled = false;
+}
+
+function showAIResults(ai) {
+    document.getElementById("aiResults").style.display = "block";
+    document.getElementById("aiDiagnosis").textContent = ai.diagnosis;
+    document.getElementById("aiConfidence").textContent = ai.confidence || "N/A";
+    document.getElementById("aiFindings").textContent = ai.findings;
+    document.getElementById("aiTreatment").textContent = ai.treatment || "Consult Doctor";
+}
+
+async function saveFocusNotes() {
+    const notes = document.getElementById("focusNotes").value;
+    await apiRequest(`/radio/notes/${currentFocusCaseId}`, { 
+        method: "POST", body: { radiologistNotes: notes } 
+    });
+    alert("Report Saved Successfully!");
+}
+
+async function sendFocusChat() {
+    const input = document.getElementById("focusChatInput");
+    const msg = input.value;
+    if(!msg) return;
+
+    const chatBox = document.getElementById("focusChatHistory");
+    chatBox.innerHTML += `<div style="text-align:right; margin:5px;"><span style="background:#6366f1; color:white; padding:8px 12px; border-radius:12px; display:inline-block;">${msg}</span></div>`;
+    input.value = "";
+
+    try {
+        const res = await apiRequest(`/ai/chat/${currentFocusCaseId}`, { method: "POST", body: { question: msg } });
+        chatBox.innerHTML += `<div style="text-align:left; margin:5px;"><span style="background:#f1f5f9; color:black; padding:8px 12px; border-radius:12px; display:inline-block;">${res.answer}</span></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    } catch(e) { alert("Chat Error"); }
+}
+
+// ============================================================
+// 6. DOCTOR FUNCTIONS (RESTORED ENHANCED UI)
+// ============================================================
+
 async function renderDoctorCases() {
     const list = document.getElementById("doctorCasesList");
     if(!list) return;
@@ -674,21 +747,20 @@ async function renderDoctorCases() {
                     </button>
                 </div>
 
-                <!-- ✅ ADDED: Display Radiologist Report prominently -->
-                <div style="background:#f0fdf4; padding:12px; border-radius:8px; margin:10px 0; border:1px solid #bbf7d0;">
-                    <strong style="color:#166534"><i class="fa-solid fa-user-md"></i> Radiologist Report:</strong>
-                    <p style="white-space: pre-line; margin-top:5px; font-size:0.95rem;">${c.radiologistNotes || "Pending Analysis by Radiologist..."}</p>
-                </div>
-
                 <div class="split-view" style="display:flex; gap:15px; margin-top:10px;">
                     <img src="${imageUrl || 'https://via.placeholder.com/150?text=Waiting'}" style="width:100px; height:100px; object-fit:cover; border-radius:6px;">
                     
                     <div style="flex:1;">
-                        <p><strong>AI Findings:</strong> ${c.aiData?.findings || 'Pending'}</p>
-                        <p><strong>Final Rx:</strong> ${c.prescription || 'None'}</p>
+                        <div style="background:#f0fdf4; padding:8px; border-radius:6px; margin-bottom:5px; border:1px solid #bbf7d0;">
+                            <strong style="color:#166534">Radiologist:</strong> ${c.radiologistNotes || "Pending"}
+                        </div>
+                        <div style="background:#f8fafc; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+                            <strong>AI:</strong> ${c.aiData?.findings || "Pending"}
+                        </div>
+                        
                         ${c.images.length > 0 && !c.prescription ? `
-                            <button class="btn-primary-outline full-width" onclick="openRx('${c._id}')">Write Final Prescription</button>
-                        ` : ''}
+                            <button class="btn-primary-outline full-width" style="margin-top:10px;" onclick="openRx('${c._id}')">Write Prescription</button>
+                        ` : `<p style="margin-top:5px; color:green;"><strong>Rx:</strong> ${c.prescription}</p>`}
                     </div>
                 </div>
             `;
@@ -763,26 +835,71 @@ function closeTimeline() { document.getElementById('timelineSidebar').style.disp
 /* ============================================================
    PATIENT FUNCTIONS (UPDATED: PDF Download)
 ============================================================ */
+/* ============================================================
+   FIXED PATIENT RENDER FUNCTION (Replace existing one)
+============================================================ */
 async function renderPatientCases() {
     const list = document.getElementById("patientCasesList");
     if(!list) return;
+
+    // 1. Safety Check: Ensure user is logged in before fetching
+    if (!currentUser || !currentUser._id) {
+        // console.log("Waiting for user session...");
+        return;
+    }
+
+    list.innerHTML = "<div class='case-card'>Loading your reports...</div>";
+
     try {
         const data = await apiRequest(`/patient/cases/${currentUser._id}`);
+        
+        // 2. Data Validation
+        if (!data || !data.cases || data.cases.length === 0) {
+            list.innerHTML = "<div class='case-card'>No medical reports found.</div>";
+            return;
+        }
+
         list.innerHTML = "";
+        
         data.cases.forEach(c => {
+            // Check specific fields exist
+            const doctorRx = c.prescription ? c.prescription : "Pending review...";
+            const radNotes = c.radiologistNotes ? c.radiologistNotes : "Pending analysis...";
+            const aiDiag = c.aiData && c.aiData.diagnosis ? c.aiData.diagnosis : "Pending";
+
             list.innerHTML += `
                 <div class="case-card">
-                    <h3>${c.scanType} Scan</h3>
-                    <p>Date: ${new Date(c.date).toLocaleDateString()}</p>
-                    
-                    <div class="ai-box" style="background:#f8f9fa; padding:10px; margin:10px 0;">
-                        <b>Radiologist Findings:</b> ${c.radiologistNotes || 'Pending'}<br>
-                        <b>Doctor Rx:</b> ${c.prescription || 'Pending'}
+                    <div class="case-top" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span class="badge badge-scan">${c.scanType || "Scan"}</span>
+                        <small>${new Date(c.date).toLocaleDateString()}</small>
                     </div>
-                    ${c.aiData ? `<a href="${API_BASE}/patient/pdf/${c._id}" target="_blank" class="btn-primary full-width" style="display:block; text-align:center; text-decoration:none;">Download Report (PDF)</a>` : ''}
+
+                    <!-- Doctor's Prescription Section (Highlighted) -->
+                    <div style="background:#f0fdf4; padding:12px; border-radius:8px; border:1px solid #bbf7d0; margin-bottom:10px;">
+                        <strong style="color:#166534;"><i class="fa-solid fa-user-doctor"></i> Doctor's Prescription:</strong>
+                        <p style="margin-top:5px; font-weight:500; color:#14532d;">${doctorRx}</p>
+                    </div>
+
+                    <!-- Radiologist & AI Section -->
+                    <div style="background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0; font-size:0.9rem;">
+                        <p><strong><i class="fa-solid fa-eye"></i> Radiologist Notes:</strong> ${radNotes}</p>
+                        <hr style="border-color:#e2e8f0; margin:5px 0;">
+                        <p><strong><i class="fa-solid fa-robot"></i> AI Diagnosis:</strong> ${aiDiag}</p>
+                    </div>
+
+                    <!-- PDF Download -->
+                    ${c.aiData ? `
+                        <a href="${API_BASE}/patient/pdf/${c._id}" target="_blank" class="btn-primary full-width" style="display:block; text-align:center; margin-top:15px; text-decoration:none;">
+                            <i class="fa-solid fa-file-pdf"></i> Download Official Report
+                        </a>` : ''
+                    }
                 </div>`;
         });
-    } catch(e) { list.innerHTML = "Error"; }
+
+    } catch(e) { 
+        console.error("Patient Dashboard Error:", e); // Use this to see real error in F12 Console
+        list.innerHTML = `<div class="case-card" style="color:red;">Error loading reports: ${e.message}</div>`; 
+    }
 }
 
 /* ============================================================

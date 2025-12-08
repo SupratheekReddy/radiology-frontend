@@ -600,3 +600,55 @@ textarea:focus {
   outline: none;
   border-color: var(--primary);
 }
+/* =====================================================
+   ✨ FULL FOCUS VIEW STYLING (Polished)
+===================================================== */
+
+/* 1. Header Styling */
+#fullCaseView h2 {
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.5px;
+}
+
+/* 2. Image Container */
+#focusImage {
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);
+  transition: transform 0.3s ease;
+}
+#focusImage:hover {
+  transform: scale(1.01);
+}
+
+/* 3. AI Results Box (Pretty colors) */
+#aiResults {
+  animation: fadeIn 0.5s ease-out;
+}
+#aiDiagnosis {
+  font-weight: 700;
+  color: #0369a1;
+}
+#aiConfidence {
+  font-family: monospace;
+  background: #e0f2fe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #0284c7;
+}
+
+/* 4. Chat Bubbles in Full View */
+#focusChatHistory div span {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* 5. Fade In Animation for Modal */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#fullCaseView {
+  animation: fadeIn 0.3s ease-out;
+}
